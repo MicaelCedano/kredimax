@@ -1,0 +1,545 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792434168639,
+      "tag": "0000_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792434186241,
+      "tag": "0001_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792434286436,
+      "tag": "0002_tenant_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792512219827,
+      "tag": "0003_credit_applications_financing",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792513117952,
+      "tag": "0004_toggle_midterm_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792513736114,
+      "tag": "0005_nifty_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792514149659,
+      "tag": "0006_true_mockingbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792514941303,
+      "tag": "0007_atomic_payment_posting",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792516500000,
+      "tag": "0008_atomic_customer_application",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792520559256,
+      "tag": "0009_application_creates_inventory_device",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792521049158,
+      "tag": "0010_each_application_uses_new_device",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792522122000,
+      "tag": "0011_restrict_financial_table_writes",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792523000000,
+      "tag": "0012_financial_and_identity_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792524000000,
+      "tag": "0013_payment_posting_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792525000000,
+      "tag": "0014_authorized_payment_reversals",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792526000000,
+      "tag": "0015_customer_identity_lookup",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792527000000,
+      "tag": "0016_imei_luhn_parity_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792528000000,
+      "tag": "0017_membership_management",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792529000000,
+      "tag": "0018_permission_helper_rls_recursion",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792530000000,
+      "tag": "0019_assigned_branch_read",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792531000000,
+      "tag": "0020_quote_snapshot_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792532000000,
+      "tag": "0021_imei_change_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792533000000,
+      "tag": "0022_branch_isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792534000000,
+      "tag": "0023_loan_formalization_activation",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792535000000,
+      "tag": "0024_payment_type_and_initial_reversal",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792536000000,
+      "tag": "0025_branch_scoped_financing_rpcs",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792537000000,
+      "tag": "0026_audited_branch_creation",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792538000000,
+      "tag": "0027_report_aggregates",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792539000000,
+      "tag": "0028_audit_operational_changes",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792540000000,
+      "tag": "0029_dashboard_aggregates",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792541000000,
+      "tag": "0030_finance_rpc_default_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792542000000,
+      "tag": "0031_branch_scoped_membership_management",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792543000000,
+      "tag": "0032_central_scope_admin_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792544000000,
+      "tag": "0033_tenant_admin_all_branches",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792545000000,
+      "tag": "0034_admin_branch_write_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792546000000,
+      "tag": "0035_tenant_admin_all_branch_writes",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792547000000,
+      "tag": "0036_payment_detail_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792548000000,
+      "tag": "0037_payment_report_branch_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792549000000,
+      "tag": "0038_admin_mfa_enforcement",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792550000000,
+      "tag": "0039_admin_mfa_suspended_tenant_fix",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792551000000,
+      "tag": "0040_collections_summary",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792552000000,
+      "tag": "0041_open_installment_page",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792553000000,
+      "tag": "0042_exact_money_aggregates",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1792554000000,
+      "tag": "0043_restrict_destructive_and_workflow_writes",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792555000000,
+      "tag": "0044_restrict_supabase_trigger_execution",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792556000000,
+      "tag": "0045_tenant_admin_financing_branch_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792557000000,
+      "tag": "0046_tenant_admin_application_device_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1792558000000,
+      "tag": "0047_revoke_anon_table_writes",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1792559000000,
+      "tag": "0048_remove_ambiguous_payment_rpc_overloads",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1792560000000,
+      "tag": "0049_branch_scoped_application_review",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1792561000000,
+      "tag": "0050_financing_business_timezone",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1792562000000,
+      "tag": "0051_restrict_api_table_object_privileges",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1792563000000,
+      "tag": "0052_activation_contract_evidence_attestation",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792564000000,
+      "tag": "0053_disable_admin_totp_requirement",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1792565000000,
+      "tag": "0054_notifications_read_only_update",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792551224820,
+      "tag": "0055_restrict_anon_imei_validator",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1792554025329,
+      "tag": "0056_disable_mdm_commands",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1792554662635,
+      "tag": "0057_payment_reconciliation",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1792555335073,
+      "tag": "0058_installment_form_loan_balance",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792610682622,
+      "tag": "0059_tenant_user_provisioning",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792611322723,
+      "tag": "0060_seller_application_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792868000000,
+      "tag": "0061_customer_employment_and_reference",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792869000000,
+      "tag": "0062_internal_credit_evaluation",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1792871200000,
+      "tag": "0063_relax_imei_luhn_check",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792872000000,
+      "tag": "0064_customer_social_and_location",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1792886400000,
+      "tag": "0065_frontloaded_recovery_installments",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1792886500000,
+      "tag": "0066_selectable_application_down_payment",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792886600000,
+      "tag": "0067_customer_reference_relationship",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792886700000,
+      "tag": "0068_customer_reference_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792886800000,
+      "tag": "0069_new_financing_terms_max_12_months",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792886900000,
+      "tag": "0070_schedule_dates_from_approval",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792887000000,
+      "tag": "0071_installment_rounding_up_50",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792887100000,
+      "tag": "0072_level_payments_advisory_recovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792887200000,
+      "tag": "0073_balanced_recovery_max_20_percent",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1792887300000,
+      "tag": "0074_customer_photos_and_collection_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792887400000,
+      "tag": "0075_customer_receipt_directory",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1792887500000,
+      "tag": "0076_required_payment_evidence",
+      "breakpoints": true
+    }
+  ]
+}
