@@ -13,3 +13,6 @@ coverage/
 .local-demo/
 Microsoft/
 supabase/.temp/
+
+.vercel
+.env*

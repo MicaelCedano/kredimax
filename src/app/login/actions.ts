@@ -18,8 +18,12 @@ function isLocalSupabaseUrl(): boolean {
 
 function resolveLoginEmail(identifier: string): string | null {
   const normalized = identifier.trim();
-  if ((process.env.NODE_ENV === "development" || isLocalSupabaseUrl()) && normalized.toLowerCase() === "admin") {
-    return process.env.KREDIMAX_LOCAL_ADMIN_EMAIL?.trim() || null;
+  if (normalized.toLowerCase() === "admin") {
+    return (
+      process.env.KREDIMAX_ADMIN_EMAIL?.trim() ||
+      process.env.KREDIMAX_LOCAL_ADMIN_EMAIL?.trim() ||
+      "admin@kredimax.com"
+    );
   }
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) ? normalized : null;
 }
