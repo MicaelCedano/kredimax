@@ -48,8 +48,12 @@ export async function changeOwnPassword(_previous: AccountActionState, form: For
 }
 
 const userSchema=z.object({
-  fullName:z.string().trim().min(2).max(200),email:z.email().max(254).transform(s=>s.toLowerCase()),
-  password:z.string().min(12).max(256),confirmation:z.string(),branchId:z.string().uuid(),
+  fullName:z.string().trim().min(2).max(200),
+  email:z.string().trim().min(2).max(254).transform(s => {
+    const val = s.toLowerCase();
+    return val.includes("@") ? val : `${val.replace(/[^a-z0-9._-]/g, "")}@kredimax.com`;
+  }),
+  password:z.string().min(6).max(256),confirmation:z.string(),branchId:z.string().uuid(),
   role:z.enum(["sales","branch_manager","cashier","collections","auditor"]),
 }).refine(s=>s.password===s.confirmation);
 
@@ -63,8 +67,13 @@ export async function createTenantUser(_previous: AccountActionState, form: Form
   if (!branch.data) return {state:"invalid-branch"};
   if (!isUserProvisioningConfigured()) return {state:"not-configured"};
   const admin=createSupabaseAdminClient();
+  const rawEmailInput = value(form, "email").trim();
+  const metadata: Record<string, string> = { full_name: parsed.data.fullName };
+  if (!rawEmailInput.includes("@")) {
+    metadata.username = rawEmailInput.toLowerCase();
+  }
   const created=await admin.auth.admin.createUser({email:parsed.data.email,password:parsed.data.password,email_confirm:true,
-    user_metadata:{full_name:parsed.data.fullName},app_metadata:{kredimax_created_for_tenant:access.membership.tenant_id,kredimax_created_by:access.userId}});
+    user_metadata:metadata,app_metadata:{kredimax_created_for_tenant:access.membership.tenant_id,kredimax_created_by:access.userId}});
   if (created.error || !created.data.user) return {state:created.error?.code==="email_exists" || created.error?.code==="user_already_exists" ? "email-exists" : "user-save-error"};
   const userId=created.data.user.id;
   const provisioned=await admin.rpc("provision_tenant_user",{p_tenant_id:access.membership.tenant_id,p_actor_id:access.userId,p_user_id:userId,p_role:parsed.data.role,p_branch_id:parsed.data.branchId});

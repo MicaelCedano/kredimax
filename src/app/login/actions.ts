@@ -17,15 +17,20 @@ function isLocalSupabaseUrl(): boolean {
 }
 
 function resolveLoginEmail(identifier: string): string | null {
-  const normalized = identifier.trim();
-  if (normalized.toLowerCase() === "admin") {
+  const normalized = identifier.trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "admin") {
     return (
       process.env.KREDIMAX_ADMIN_EMAIL?.trim() ||
       process.env.KREDIMAX_LOCAL_ADMIN_EMAIL?.trim() ||
       "admin@kredimax.com"
     );
   }
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) ? normalized : null;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    return normalized;
+  }
+  const clean = normalized.replace(/[^a-z0-9._-]/g, "");
+  return clean ? `${clean}@kredimax.com` : null;
 }
 
 export async function signIn(_previousState: LoginActionState, formData: FormData): Promise<LoginActionState> {

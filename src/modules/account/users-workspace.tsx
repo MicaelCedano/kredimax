@@ -24,12 +24,20 @@ const editMessages: Record<string, string> = {
   "save-error": "No se pudo guardar. No puedes suspender o quitar el rol al último administrador activo.",
 };
 
+function displayLoginIdentifier(email: string | null) {
+  if (!email) return "Sin usuario registrado";
+  if (email.endsWith("@kredimax.com")) {
+    return `Usuario: ${email.replace("@kredimax.com", "")}`;
+  }
+  return email;
+}
+
 function MembershipEditForm({ member, branches, onCancel }: { member: DirectoryMember; branches: Branch[]; onCancel: () => void }) {
   const [state, action, pending] = useActionState(updateMembership, null);
   const { formRef, preserve } = usePreservedFormValues(state, ["role", "branchId", "status"]);
   return <form ref={formRef} action={action} onSubmit={preserve} data-pending={pending} className="flex min-h-0 flex-1 flex-col">
     <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-6 sm:px-7">
-      <div className="rounded-xl bg-subtle p-4"><p className="font-semibold text-ink">{member.full_name}</p><p className="mt-1 break-all text-sm text-muted">{member.email ?? "Sin correo registrado"}</p></div>
+      <div className="rounded-xl bg-subtle p-4"><p className="font-semibold text-ink">{member.full_name}</p><p className="mt-1 break-all text-sm text-muted">{displayLoginIdentifier(member.email)}</p></div>
       <input type="hidden" name="membershipId" value={member.id}/>
       <label className="block text-sm font-medium text-secondary">Rol<select name="role" defaultValue={member.role} required className="km-input mt-2 block w-full">{Object.entries(accountRoles).filter(([role]) => role !== "platform_admin").map(([role, label]) => <option key={role} value={role}>{label}</option>)}</select></label>
       <label className="block text-sm font-medium text-secondary">Sucursal<select name="branchId" defaultValue={member.branch_id ?? ""} className="km-input mt-2 block w-full"><option value="">Todas las sucursales (administrador)</option>{branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}{branch.active ? "" : " · Inactiva"}</option>)}</select></label>
@@ -69,7 +77,7 @@ export function UsersWorkspace({ members, branches, count, page, pages, currentU
         <div aria-hidden className="mx-5 hidden grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.2fr)_100px_80px] items-center gap-4 rounded-lg bg-subtle px-4 py-3 text-[11px] font-semibold uppercase tracking-[.06em] text-muted sm:mx-7 xl:grid"><span>Persona</span><span>Rol</span><span>Sucursal</span><span>Estado</span><span/></div>
         <ul className="min-h-[260px] divide-y divide-line px-5 sm:px-7" aria-label="Usuarios de la empresa">
           {filtered.map(member => <li key={member.id} className="relative grid gap-x-4 gap-y-4 py-6 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1.2fr)_100px_80px] xl:items-center xl:px-4">
-            <div className="flex min-w-0 items-center gap-3 pr-20 sm:col-span-2 xl:col-span-1 xl:pr-0"><span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-[#edf4ff] text-sm font-semibold text-accent">{initials(member.full_name)}</span><div className="min-w-0"><h3 className="break-words text-sm font-semibold text-ink">{member.full_name}</h3><p title={member.email ?? undefined} className="mt-1 truncate text-xs text-muted">{member.email ?? "Sin correo registrado"}</p>{member.user_id === currentUserId && <span className="mt-1.5 inline-block rounded-md bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">Tu cuenta</span>}</div></div>
+            <div className="flex min-w-0 items-center gap-3 pr-20 sm:col-span-2 xl:col-span-1 xl:pr-0"><span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-[#edf4ff] text-sm font-semibold text-accent">{initials(member.full_name)}</span><div className="min-w-0"><h3 className="break-words text-sm font-semibold text-ink">{member.full_name}</h3><p title={member.email ?? undefined} className="mt-1 truncate text-xs text-muted">{displayLoginIdentifier(member.email)}</p>{member.user_id === currentUserId && <span className="mt-1.5 inline-block rounded-md bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">Tu cuenta</span>}</div></div>
             <div className="flex min-w-0 items-center gap-2 text-sm text-secondary"><ShieldCheck size={17} className="shrink-0 text-muted" aria-hidden/><span>{accountRoles[member.role] ?? member.role}</span></div>
             <div className="flex min-w-0 items-center gap-2 text-sm text-secondary"><MapPin size={16} className="shrink-0 text-muted xl:hidden" aria-hidden/><span>{member.role === "tenant_admin" ? "Todas las sucursales" : branches.find(branch => branch.id === member.branch_id)?.name ?? "Sin sucursal"}</span></div>
             <span className={`inline-flex w-fit items-center gap-2 text-xs font-medium ${member.status === "active" ? "text-positive" : "text-warning"}`}><span aria-hidden className={`size-2 rounded-full ${member.status === "active" ? "bg-positive-soft0" : "bg-warning-soft0"}`}/>{member.status === "active" ? "Activo" : "Suspendido"}</span>
