@@ -7,6 +7,7 @@ export function UserDrawer({ title, description, icon: Icon, onDismiss, children
   title: string; description: string; icon: LucideIcon; onDismiss: () => void; children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const isBackdropMouseDown = useRef(false);
   const id = useId();
   useEffect(() => {
     const element = dialog.current;
@@ -26,10 +27,32 @@ export function UserDrawer({ title, description, icon: Icon, onDismiss, children
   return <dialog ref={dialog} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}
     className="users-drawer fixed inset-y-0 left-auto right-0 m-0 h-dvh max-h-dvh w-full max-w-[540px] border-0 bg-surface p-0 text-ink shadow-2xl backdrop:bg-[#07182f]/35 backdrop:backdrop-blur-[2px] sm:my-3 sm:mr-3 sm:h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-1.5rem)] sm:rounded-2xl"
     onCancel={event => { event.preventDefault(); dismiss(); }}
-    onClick={event => { if (event.target === event.currentTarget) {
-      const bounds = event.currentTarget.getBoundingClientRect();
-      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dismiss();
-    } }}>
+    onMouseDown={event => {
+      if (event.target === event.currentTarget) {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        isBackdropMouseDown.current =
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom;
+      } else {
+        isBackdropMouseDown.current = false;
+      }
+    }}
+    onClick={event => {
+      if (isBackdropMouseDown.current && event.target === event.currentTarget) {
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom
+        ) {
+          dismiss();
+        }
+      }
+      isBackdropMouseDown.current = false;
+    }}>
     <div className="flex h-full flex-col">
       <header className="flex shrink-0 items-start gap-3 border-b border-line px-5 py-6 sm:px-7">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Icon size={24} strokeWidth={1.7} aria-hidden/></span>
