@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { loadAllPages } from "@/lib/pagination/load-all-pages";
 import { branchIdsForMemberships } from "@/lib/auth/session-branches";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { attemptSignOut } from "@/lib/auth/attempt-sign-out";
+import { useNavigationAccess } from "@/components/dashboard/navigation-context";
 
 const roleLabels: Record<string, string> = {
   tenant_admin: "Administrador",
@@ -33,6 +34,8 @@ export function Topbar() {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const router = useRouter();
+  const { can, setAccess } = useNavigationAccess();
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -65,9 +68,10 @@ export function Topbar() {
         const activeMemberships = memberships ?? [];
         const tenantIds = [...new Set(activeMemberships.map((membership) => membership.tenant_id))];
         const branchIds = branchIdsForMemberships(activeMemberships);
-        const [{ data: tenants }, { data: branches }] = await Promise.all([
+        const [{ data: tenants }, { data: branches }, permissionResult] = await Promise.all([
           tenantIds.length ? supabase.from("tenants").select("id,name").in("id", tenantIds) : Promise.resolve({ data: [] }),
           branchIds.length ? supabase.from("branches").select("id,name").in("id", branchIds) : Promise.resolve({ data: [] }),
+          supabase.from("roles").select("key,role_permissions(permissions(key))").in("key", [...new Set(activeMemberships.map((membership) => membership.role))]),
         ]);
         if (!active) return;
         const tenantNames = new Map((tenants ?? []).map((tenant) => [tenant.id, tenant.name]));
@@ -80,6 +84,16 @@ export function Topbar() {
           role: membership.role,
         }));
         setTenantChoices(choices);
+        const permissionMap: Record<string, string[]> = {};
+        if (!permissionResult.error) {
+          for (const row of permissionResult.data ?? []) {
+            permissionMap[row.key] = row.role_permissions.flatMap((grant) => {
+              const values = Array.isArray(grant.permissions) ? grant.permissions : [grant.permissions];
+              return values.filter((value) => value && typeof value.key === "string").map((value) => value.key);
+            });
+          }
+          setRolePermissions(permissionMap);
+        }
         const cookieSelection = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("kredimax_tenant="))?.slice("kredimax_tenant=".length);
         const selected = choices.find((choice) => choice.id === cookieSelection) ?? (choices.length === 1 ? choices[0] : null);
         if (selected) {
@@ -87,6 +101,7 @@ export function Topbar() {
           setRole(roleLabels[selected.role] ?? "Usuario");
           setOrganization(selected.name);
           setBranch(selected.branchName);
+          if (!permissionResult.error && permissionMap[selected.role]) setAccess({ role: selected.role, permissions: permissionMap[selected.role] });
         } else if (choices.length > 1) {
           setOrganization("Selecciona empresa");
           setBranch("Contexto no seleccionado");
@@ -98,7 +113,7 @@ export function Topbar() {
 
     void loadProfile();
     return () => { active = false; };
-  }, []);
+  }, [setAccess]);
 
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase("es-DO") || "U";
   const selectTenant = (tenantId: string) => {
@@ -107,6 +122,7 @@ export function Topbar() {
     setOrganization(choice?.name ?? "Selecciona empresa");
     setBranch(choice?.branchName ?? "Contexto no seleccionado");
     setRole(choice ? roleLabels[choice.role] ?? "Usuario" : "Usuario");
+    setAccess(choice && rolePermissions?.[choice.role] ? { role: choice.role, permissions: rolePermissions[choice.role] } : null);
     document.cookie = `kredimax_tenant=${encodeURIComponent(tenantId)}; Path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
     router.refresh();
   };
@@ -133,15 +149,16 @@ export function Topbar() {
   };
 
   return <>
-    <header className="km-topbar sticky top-0 z-20 flex h-[76px] items-center justify-between gap-3 px-3 sm:px-7 lg:ml-[244px]">
+    <header className="km-topbar sticky top-0 z-20 flex h-[72px] items-center justify-between gap-3 px-3 sm:px-7 lg:ml-[244px]">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3"><MobileNavigation tenantChoices={tenantChoices} selectedTenant={selectedTenant} selectedContext={{ organization, branch, role }} onTenantChange={selectTenant}/><Link href="/" prefetch={false} aria-label="KrediMax inicio" className="text-[20px] font-bold tracking-[-.8px] text-ink md:hidden">Kredi<span className="text-accent">Max</span></Link><SearchBox/></div>
       <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-3">
         <CompanyContext tenantChoices={tenantChoices} selectedTenant={selectedTenant} organization={organization} branch={branch} onTenantChange={selectTenant}/>
         {signOutError && <span role="alert" className="max-w-32 text-[10px] leading-4 text-danger sm:max-w-48 sm:text-xs">{signOutError}</span>}
+        {can("financing.write") && <Link href="/solicitudes/nueva" prefetch={false} className="km-icon-button km-quick-action" aria-label="Nueva solicitud" title="Nueva solicitud"><Plus size={20} aria-hidden/></Link>}
         <Link aria-label="Notificaciones" title="Notificaciones" href="/notificaciones" prefetch={false} className="km-icon-button"><Bell size={18}/></Link>
         <AppearanceControl/>
         <Link href="/perfil" prefetch={false} title="Mi perfil y contraseña" className="flex items-center gap-2.5 rounded-lg py-1 pl-1 text-left transition-colors hover:bg-subtle" aria-label={`Mi perfil. Cuenta de ${name}. Rol: ${role}. Empresa: ${organization}. Sucursal: ${branch}.`}>
-          <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-[#0752aa] text-[12px] font-semibold text-white">{initials}</span>
+          <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-accent-soft text-[12px] font-semibold text-accent">{initials}</span>
           <span className="hidden 2xl:block"><span className="block max-w-40 truncate text-sm font-semibold leading-5 text-ink">{name}</span><span className="block max-w-48 truncate text-xs text-muted">{role} · {organization}</span></span>
         </Link>
         <button type="button" onClick={signOut} disabled={signingOut} aria-busy={signingOut} aria-label="Cerrar sesión" title={signingOut ? "Cerrando sesión…" : "Cerrar sesión"} className="km-icon-button disabled:cursor-wait disabled:opacity-60"><LogOut size={17}/></button>

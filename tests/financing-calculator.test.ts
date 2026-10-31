@@ -29,18 +29,21 @@ describe("financing quote calculator", () => {
     expect(monthEnd.finalDueDate).toBe("2027-06-30");
   });
 
-  it("allows the five initial percentages, retains a configured legacy default and rejects other choices", () => {
-    expect(downPaymentOptions("30.00")).toEqual(["30.00", "35.00", "40.00", "45.00", "50.00"]);
+  it("allows initial percentages through eighty percent, retains a configured legacy default and rejects other choices", () => {
+    expect(downPaymentOptions("30.00")).toEqual(["30.00", "35.00", "40.00", "45.00", "50.00", "55.00", "60.00", "65.00", "70.00", "75.00", "80.00"]);
     expect(downPaymentOptions("32.50")).toContain("32.50");
     expect(resolveDownPaymentPercent("", "35.00")).toBe("35.00");
     expect(resolveDownPaymentPercent("40", "30.00")).toBe("40.00");
+    for (const percent of ["50", "55", "60", "65", "70", "75", "80"]) {
+      expect(resolveDownPaymentPercent(percent, "30.00")).toBe(`${percent}.00`);
+    }
     expect(resolveDownPaymentPercent("32.50", "32.50")).toBe("32.50");
-    for (const invalid of ["25", "55", "0", "101", "30.001", "NaN"]) {
+    for (const invalid of ["25", "52.50", "85", "0", "101", "30.001", "NaN"]) {
       expect(() => resolveDownPaymentPercent(invalid, "30.00")).toThrow();
     }
   });
 
-  it.each(["30.00", "35.00", "40.00", "45.00", "50.00"])("updates down payment, financed capital, interest and notes for %s percent", (downPaymentPercent) => {
+  it.each(["30.00", "35.00", "40.00", "45.00", "50.00", "55.00", "60.00", "65.00", "70.00", "75.00", "80.00"])("updates down payment, financed capital, interest and notes for %s percent", (downPaymentPercent) => {
     const input = { ...defaults, salePrice: "35000.00", deviceCost: "35000.00", downPaymentPercent };
     const base = calculateFinancingQuote({ ...input, recoveryEnabled: false });
     const recovery = calculateFinancingQuote({ ...input, recoveryEnabled: true });

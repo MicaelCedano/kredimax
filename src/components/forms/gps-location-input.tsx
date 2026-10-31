@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ExternalLink, LocateFixed, MapPin } from "lucide-react";
 
 function toGoogleMapsUrl(raw: string): string {
@@ -13,11 +13,16 @@ export function HomeLocationInput({
   defaultValue = "",
   readOnly = false,
   inputClass,
+  required = false,
+  name = "homeLocation",
 }: {
   defaultValue?: string;
   readOnly?: boolean;
   inputClass: string;
+  required?: boolean;
+  name?: string;
 }) {
+  const id = useId();
   const [value, setValue] = useState(defaultValue);
   const [locating, setLocating] = useState(false);
   const [geoMessage, setGeoMessage] = useState<string | null>(null);
@@ -48,10 +53,10 @@ export function HomeLocationInput({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary">
+        <label htmlFor={id} className="inline-flex items-center gap-1.5 text-sm font-semibold text-secondary">
           <MapPin size={15} className="text-accent" aria-hidden />
-          Ubicación de la casa (Google Maps / GPS / referencia)
-        </span>
+          Ubicación de la casa (Google Maps / GPS / referencia){required ? " *" : ""}
+        </label>
         <div className="flex items-center gap-2">
           {!readOnly && (
             <button
@@ -79,7 +84,10 @@ export function HomeLocationInput({
       </div>
       <input
         readOnly={readOnly}
-        name="homeLocation"
+        id={id}
+        name={name}
+        required={required}
+        minLength={required ? 5 : undefined}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         maxLength={500}

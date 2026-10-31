@@ -46,6 +46,7 @@ export const tenantMemberships = pgTable("tenant_memberships", {
 
 export const customers = pgTable("customers", {
   id: uuid("id").defaultRandom().primaryKey(), tenantId: uuid("tenant_id").notNull().references(() => tenants.id), branchId: uuid("branch_id"),
+  createdBy: uuid("created_by"), createdByName: text("created_by_name"),
   fullName: varchar("full_name", { length: 200 }).notNull(), identityNumber: text("identity_number"), phone: text("phone"), address: text("address"),
   employer: text("employer"), monthlyIncome: numeric("monthly_income", { precision: 14, scale: 2 }), referenceName: text("reference_name"), referencePhone: text("reference_phone"),
   referenceRelationship: varchar("reference_relationship", { length: 20 }),
@@ -65,6 +66,7 @@ export const customers = pgTable("customers", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("customers_tenant_created_idx").on(t.tenantId, t.createdAt), uniqueIndex("customers_tenant_id_uidx").on(t.tenantId, t.id),
+  index("customers_tenant_seller_idx").on(t.tenantId, t.createdBy, t.createdAt),
   foreignKey({ name: "customers_branch_tenant_fk", columns: [t.tenantId, t.branchId], foreignColumns: [branches.tenantId, branches.id] }),
 ]);
 const photoBytes = customType<{ data: string }>({ dataType: () => "bytea" });
@@ -114,9 +116,10 @@ export const creditApplications = pgTable("credit_applications", {
   reviewNotes: text("review_notes"), additionalChargeCategory: varchar("additional_charge_category", { length: 100 }),
   additionalChargeBasis: text("additional_charge_basis"), additionalChargeApprovedBy: uuid("additional_charge_approved_by"),
   additionalChargeApprovedAt: timestamp("additional_charge_approved_at", { withTimezone: true }),
-  createdBy: uuid("created_by").notNull(),
+  createdBy: uuid("created_by").notNull(), createdByName: text("created_by_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
+  index("credit_applications_tenant_creator_status_idx").on(t.tenantId, t.createdBy, t.status, t.createdAt),
   index("credit_applications_tenant_status_idx").on(t.tenantId, t.status),
   uniqueIndex("credit_applications_tenant_id_uidx").on(t.tenantId, t.id),
   uniqueIndex("credit_applications_submission_uidx").on(t.tenantId, t.createdBy, t.submissionKey),
@@ -200,6 +203,7 @@ export const installments = pgTable("installments", {
   foreignKey({ name: "installments_loan_tenant_fk", columns: [t.tenantId, t.loanId], foreignColumns: [loans.tenantId, loans.id] }),
 ]);
 export const payments = pgTable("payments", {
+  receiptNumber: varchar("receipt_number", { length: 64 }),
   id: uuid("id").defaultRandom().primaryKey(), tenantId: uuid("tenant_id").notNull().references(() => tenants.id), loanId: uuid("loan_id").notNull(),
   idempotencyKey: uuid("idempotency_key").notNull(), amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("DOP"), receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
@@ -207,8 +211,24 @@ export const payments = pgTable("payments", {
   paymentType: varchar("payment_type", { length: 24 }).notNull().default("installment"), reversedAt: timestamp("reversed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
+  uniqueIndex("payments_tenant_receipt_uidx").on(t.tenantId, t.receiptNumber),
   uniqueIndex("payments_tenant_idempotency_uidx").on(t.tenantId, t.idempotencyKey), index("payments_tenant_received_idx").on(t.tenantId, t.receivedAt), uniqueIndex("payments_tenant_id_uidx").on(t.tenantId, t.id),
   foreignKey({ name: "payments_loan_tenant_fk", columns: [t.tenantId, t.loanId], foreignColumns: [loans.tenantId, loans.id] }),
+]);
+export const cashClosings = pgTable("cash_closings", {
+  id: uuid("id").defaultRandom().primaryKey(), tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: uuid("branch_id").notNull(), sellerId: uuid("seller_id").notNull(), businessDate: date("business_date").notNull(),
+  paymentType: varchar("payment_type", { length: 24 }).notNull(),
+  expectedCash: numeric("expected_cash", { precision: 14, scale: 2 }).notNull(),
+  expectedTransfer: numeric("expected_transfer", { precision: 14, scale: 2 }).notNull(),
+  expectedOther: numeric("expected_other", { precision: 14, scale: 2 }).notNull(),
+  declaredCash: numeric("declared_cash", { precision: 14, scale: 2 }).notNull(),
+  declaredTransfer: numeric("declared_transfer", { precision: 14, scale: 2 }).notNull(),
+  declaredOther: numeric("declared_other", { precision: 14, scale: 2 }).notNull(),
+  notes: text("notes"), closedBy: uuid("closed_by").notNull(), closedAt: timestamp("closed_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("cash_closings_drawer_uidx").on(t.tenantId, t.branchId, t.sellerId, t.businessDate, t.paymentType),
+  foreignKey({ columns: [t.tenantId, t.branchId], foreignColumns: [branches.tenantId, branches.id] }),
+  foreignKey({ columns: [t.tenantId, t.sellerId], foreignColumns: [tenantMemberships.tenantId, tenantMemberships.userId] }),
 ]);
 export const paymentEvidence = pgTable("payment_evidence", {
   paymentId: uuid("payment_id").primaryKey(), tenantId: uuid("tenant_id").notNull().references(() => tenants.id),

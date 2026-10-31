@@ -41,7 +41,7 @@ export async function recordLoanPayment(_previousState: PaymentActionState, form
   let evidence;
   try { evidence = await readPaymentEvidence(formData, parsed.data.paymentMethod); }
   catch (error) { return { state: error instanceof PaymentEvidenceError ? error.code : "evidence-invalid" }; }
-  const { error } = await access.supabase.rpc("record_loan_payment_with_evidence", {
+  const { data: paymentId, error } = await access.supabase.rpc("record_loan_payment_with_evidence", {
     p_loan_id: parsed.data.loanId,
     p_amount: parsed.data.amount,
     p_idempotency_key: parsed.data.idempotencyKey,
@@ -51,7 +51,7 @@ export async function recordLoanPayment(_previousState: PaymentActionState, form
     p_signed_receipt_attested: evidence.signedReceiptAttested,
   });
   if (error) {
-    const state = error.message.includes("EXCEEDS_BALANCE") ? "exceeds-balance" : error.message.includes("IDEMPOTENCY_EVIDENCE_CONFLICT") ? "evidence-conflict" : "save-error";
+    const state = error.message.includes("CASH_ALREADY_CLOSED") ? "cash-closed" : error.message.includes("EXCEEDS_BALANCE") ? "exceeds-balance" : error.message.includes("IDEMPOTENCY_EVIDENCE_CONFLICT") ? "evidence-conflict" : "save-error";
     return { state };
   }
 
@@ -78,9 +78,10 @@ export async function recordLoanPayment(_previousState: PaymentActionState, form
 
   revalidatePath("/cobros");
   revalidatePath("/recibos");
+  revalidatePath("/cajas");
   revalidatePath("/reportes");
   revalidatePath("/financiamientos");
-  redirect("/cobros?estado=registrado");
+  redirect(typeof paymentId === "string" ? `/recibos/${paymentId}` : "/cobros?estado=registrado");
 }
 
 const reversalSchema = z.object({ paymentId: z.string().uuid(), reason: z.string().trim().min(5).max(500) });
@@ -94,7 +95,7 @@ export async function reverseLoanPayment(_previousState: PaymentActionState, for
   const parsed = reversalSchema.safeParse({ paymentId: String(formData.get("paymentId") ?? ""), reason: String(formData.get("reason") ?? "") });
   if (!parsed.success) return { state: "reversal-invalid" };
   const { error } = await access.supabase.rpc("reverse_loan_payment", { p_payment_id: parsed.data.paymentId, p_reason: parsed.data.reason });
-  if (error) return { state: error.message.includes("FORBIDDEN") ? "forbidden" : "reversal-error" };
+  if (error) return { state: error.message.includes("CASH_ALREADY_CLOSED") ? "cash-closed" : error.message.includes("FORBIDDEN") ? "forbidden" : "reversal-error" };
 
   try {
     const { data: payment } = await access.supabase
@@ -125,6 +126,6 @@ export async function reverseLoanPayment(_previousState: PaymentActionState, for
     // Keep payment reversal resilient if optional evaluation refresh fails.
   }
 
-  for (const path of ["/cobros", "/recibos", "/reportes", "/financiamientos", "/auditoria"]) revalidatePath(path);
+  for (const path of ["/cobros", "/recibos", "/cajas", "/reportes", "/financiamientos", "/auditoria"]) revalidatePath(path);
   redirect("/cobros?estado=revertido");
 }

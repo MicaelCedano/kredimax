@@ -10,8 +10,8 @@ export function PanelHeading({ title, description, icon: Icon, id, inset, childr
     : inset === "compact" ? "-mx-5 -mt-5 mb-5" : "";
   return <div className={`km-panel-heading flex flex-wrap items-center justify-between gap-4 px-5 py-5 ${spacing}`}>
     <div className="relative z-1 flex min-w-0 flex-1 items-center gap-3">
-      {Icon && <span className="km-panel-heading-icon grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/10 text-white"><Icon size={20} strokeWidth={1.8} aria-hidden/></span>}
-      <div className="min-w-0"><h2 id={id} className="km-panel-heading-title text-[15px] font-semibold leading-6 tracking-tight text-white">{title}</h2>{description && <p className="km-panel-heading-description mt-1 text-xs leading-5 text-[#d6e5fa]">{description}</p>}</div>
+      {Icon && <span className="km-panel-heading-icon grid size-10 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Icon size={20} strokeWidth={1.8} aria-hidden/></span>}
+      <div className="min-w-0"><h2 id={id} className="km-panel-heading-title text-[15px] font-semibold leading-6 tracking-tight text-ink">{title}</h2>{description && <p className="km-panel-heading-description mt-1 text-xs leading-5 text-muted">{description}</p>}</div>
     </div>
     {children && <div className="relative z-1 min-w-0 max-w-full">{children}</div>}
   </div>;

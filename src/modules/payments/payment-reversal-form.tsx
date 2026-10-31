@@ -20,6 +20,6 @@ export function PaymentReversalForm({ paymentId, expanded = false }: { paymentId
     <input type="hidden" name="paymentId" value={paymentId}/>
     {expanded ? <label className="block text-xs font-semibold text-secondary">Motivo del reverso{reasonInput}</label> : reasonInput}
     <SubmitButton disabled={pending} className={expanded ? "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-rose-700 px-4 py-3 text-sm font-semibold text-white hover:bg-rose-800 disabled:opacity-60" : "rounded border border-danger-line px-2.5 py-1.5 font-semibold text-danger disabled:opacity-60"}>{pending ? "Revirtiendo…" : expanded ? "Confirmar reverso" : "Revertir"}</SubmitButton>
-    {state?.state && <span role="alert" className="basis-full text-xs text-danger">{state.state === "reversal-invalid" ? "Escribe un motivo de al menos cinco caracteres." : state.state === "forbidden" ? "No tienes permiso para reversar este pago." : "No se pudo registrar el reverso; el motivo quedó en el formulario."}</span>}
+    {state?.state && <span role="alert" className="basis-full text-xs text-danger">{state.state === "cash-closed" ? "La caja de este cobro ya está cerrada para hoy. No se registró el reverso." : state.state === "reversal-invalid" ? "Escribe un motivo de al menos cinco caracteres." : state.state === "forbidden" ? "No tienes permiso para reversar este pago." : "No se pudo registrar el reverso; el motivo quedó en el formulario."}</span>}
   </form>;
 }

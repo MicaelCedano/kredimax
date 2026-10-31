@@ -15,6 +15,8 @@ import { applicationIssueFields } from "@/modules/financing/application-errors";
 import { evaluateCustomerCredit, riskLabelForLevel, type CreditRiskLevel, type VerificationStatus } from "@/modules/credit-evaluation/engine";
 import { computeAndPersistCustomerEvaluation, loadCustomerInternalHistory, loadTenantCreditPolicy } from "@/modules/credit-evaluation/service";
 import { formatIdentityInput, formatPhoneInput, normalizeMoneyInput, REFERENCE_RELATIONSHIPS, uppercaseCustomerName } from "@/modules/financing/input-format";
+import { loadHandoverContext } from "@/modules/financing/handover-context.server";
+import { isProvisionalActReference, missingHandoverFields } from "@/modules/financing/handover-requirements";
 
 const uuidSchema = z.string().uuid();
 const optionalCustomerText = (max: number) => z.string().trim().max(max).transform((value) => value || null);
@@ -471,6 +473,8 @@ export async function createCreditApplication(_previousState: CreditApplicationA
 
   revalidatePath("/solicitudes");
   revalidatePath("/clientes");
+  revalidatePath("/dispositivos");
+  revalidatePath("/dispositivos/[id]", "page");
   redirect("/solicitudes?estado=creada");
 }
 
@@ -564,13 +568,15 @@ export async function reviewCreditApplication(_previousState: ReviewCreditApplic
   if (error) return { state: error.message.includes("DEVICE_NOT_IN_INVENTORY") ? "device-not-in-inventory" : error.message.includes("ADDITIONAL_CHARGE") ? "additional-charge-approval-required" : "review-error" };
   revalidatePath("/solicitudes");
   revalidatePath(`/solicitudes/${parsed.data.applicationId}`);
+  revalidatePath("/dispositivos");
+  revalidatePath("/dispositivos/[id]", "page");
   redirect(`/solicitudes/${parsed.data.applicationId}?estado=${parsed.data.decision}`);
 }
 
 export type LoanActivationState = { error?: string };
 
 export async function activateApprovedLoan(_previous: LoanActivationState, formData: FormData): Promise<LoanActivationState> {
-  const access = await getTenantAccess("financing.approve");
+  const access = await getTenantAccess("financing.activate");
   if (!access.ok) return { error: access.reason === "unauthenticated" ? "Tu sesión expiró. Inicia sesión e inténtalo otra vez." : "No tienes permiso para formalizar en esta sucursal." };
   const parsed = z.object({
     applicationId: uuidSchema,
@@ -580,19 +586,24 @@ export async function activateApprovedLoan(_previous: LoanActivationState, formD
     paymentReference: z.string().trim().max(120),
     signedDocumentPath: z.string().trim().min(3).max(1000),
     contractEvidenceAttested: z.literal("on"),
+    notarialActAttested: z.literal("on"),
     // A date input's browser `max` is presentation only; Server Actions are
     // public POST entry points, so reject impossible calendar dates here too.
     deliveryDate: z.iso.date(),
-  }).safeParse(Object.fromEntries(["applicationId", "loanId", "idempotencyKey", "paymentMethod", "paymentReference", "signedDocumentPath", "contractEvidenceAttested", "deliveryDate"]
+  }).safeParse(Object.fromEntries(["applicationId", "loanId", "idempotencyKey", "paymentMethod", "paymentReference", "signedDocumentPath", "contractEvidenceAttested", "notarialActAttested", "deliveryDate"]
     .map((key) => [key, value(formData, key)])));
-  if (!parsed.success) return { error: "Completa el método/referencia del inicial, confirma el contrato firmado/documentado y usa una fecha de entrega válida." };
+  if (!parsed.success) return { error: "Completa el método/referencia del inicial, confirma el contrato firmado/documentado y el acta notarial definitiva firmada y usa una fecha de entrega válida." };
+  if (isProvisionalActReference(parsed.data.signedDocumentPath)) return { error: "El ejemplo provisional del acta no puede registrarse como documento definitivo firmado." };
 
-  const { data: loan, error: loanError } = await access.supabase.from("loans")
-    .select("id,branch_id,customer_id")
-    .eq("id", parsed.data.loanId)
-    .eq("tenant_id", access.membership.tenant_id)
-    .maybeSingle();
-  if (loanError || !loan) return { error: "El préstamo no está disponible en tu sucursal." };
+  let context;
+  try { context = await loadHandoverContext(parsed.data.applicationId, access); }
+  catch { return { error: "No se pudo verificar el expediente para la entrega. Intenta de nuevo." }; }
+  if (!context || context.loan.id !== parsed.data.loanId) return { error: "La solicitud y el préstamo no están disponibles para esta entrega en tu sucursal." };
+  const loan = context.loan;
+  // Keep idempotent retries of active loans; require a complete server-read
+  // profile for a new activation. A client flag cannot skip this check.
+  const missing = missingHandoverFields(context.customer);
+  if (loan.status === "approved" && missing.length) return { error: `Completa el expediente antes de entregar: ${missing.map((field) => field.label).join(", ")}.` };
   const paymentAccess = await getTenantAccess("payments.record");
   if (!paymentAccess.ok || paymentAccess.membership.tenant_id !== access.membership.tenant_id) {
     return { error: "Tu rol no puede registrar el pago inicial en esta sucursal." };
@@ -601,7 +612,7 @@ export async function activateApprovedLoan(_previous: LoanActivationState, formD
   let evidence;
   try { evidence = await readPaymentEvidence(formData, parsed.data.paymentMethod); }
   catch (error) { return { error: error instanceof PaymentEvidenceError ? error.message : "No se pudo leer la evidencia del pago inicial." }; }
-  const { error } = await access.supabase.rpc("activate_approved_loan_with_evidence", {
+  const { data: paymentId, error } = await access.supabase.rpc("activate_approved_loan_with_evidence", {
     p_loan_id: parsed.data.loanId,
     p_payment_method: parsed.data.paymentMethod,
     p_reference: parsed.data.paymentReference || null,
@@ -613,6 +624,7 @@ export async function activateApprovedLoan(_previous: LoanActivationState, formD
     p_signed_receipt_attested: evidence.signedReceiptAttested,
   });
   if (error) {
+    if (error.message.includes("CASH_ALREADY_CLOSED")) return { error: "Tu caja de iniciales ya está cerrada para hoy. Registra nuevas entregas en una jornada abierta." };
     if (error.message.includes("LOAN_NOT_APPROVED")) return { error: "El préstamo ya no está pendiente de formalización." };
     if (error.message.includes("IDEMPOTENCY_EVIDENCE_CONFLICT")) return { error: "Este pago ya tiene otra evidencia. Consulta su voucher antes de volver a intentarlo." };
     if (error.message.includes("FORBIDDEN")) return { error: "No tienes permiso para formalizar y registrar el inicial en esta sucursal." };
@@ -639,7 +651,12 @@ export async function activateApprovedLoan(_previous: LoanActivationState, formD
   revalidatePath("/solicitudes");
   revalidatePath("/cobros");
   revalidatePath("/recibos");
+  revalidatePath("/cajas");
+  revalidatePath("/dispositivos");
+  revalidatePath("/dispositivos/[id]", "page");
   revalidatePath("/");
-  redirect(`/solicitudes/${parsed.data.applicationId}?estado=activada`);
+  revalidatePath(`/solicitudes/${parsed.data.applicationId}/entrega`);
+  revalidatePath(`/solicitudes/${parsed.data.applicationId}/acta`);
+  redirect(typeof paymentId === "string" ? `/recibos/${paymentId}` : `/solicitudes/${parsed.data.applicationId}?estado=activada`);
 }
 

@@ -12,7 +12,7 @@ import { getTenantAccess } from "@/lib/security/tenant-access";
 import { formatDop } from "@/lib/format-money";
 import { parseReceiptFilters, receiptListHref, RECEIPT_METHODS, RECEIPT_STATUSES, RECEIPT_TYPES, type ReceiptQuery } from "@/modules/payments/receipt-filters";
 
-type Receipt = { hasEvidence: boolean; id: string; amount: string; currency: string; receivedAt: string; method: string; type: string; reference: string | null; reversedAt: string | null; loanId: string; customerId: string; customerName: string; identity: string | null; phone: string | null; contract: string; branch: string | null; photoUpdatedAt: string | null };
+type Receipt = { receiptNumber: string | null; hasEvidence: boolean; id: string; amount: string; currency: string; receivedAt: string; method: string; type: string; reference: string | null; reversedAt: string | null; loanId: string; customerId: string; customerName: string; identity: string | null; phone: string | null; contract: string; branch: string | null; photoUpdatedAt: string | null };
 type ReceiptResult = { count: number; summary: { registered: number; reversed: number; registeredAmount: string; reversedAmount: string }; rows: Receipt[] };
 const dates = new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Santo_Domingo" });
 
@@ -51,13 +51,13 @@ export default async function ReceiptsPage({ searchParams }: { searchParams: Pro
             <div className="flex flex-col divide-y divide-line p-4 md:hidden">{result.rows.map((row) => <article key={row.id} className="flex flex-col gap-3 py-4">
               <CustomerLabel name={row.customerName} photoUrl={row.photoUpdatedAt ? `/api/clientes/${row.customerId}/foto?v=${encodeURIComponent(row.photoUpdatedAt)}` : undefined}/>
               <div className="flex flex-wrap items-center justify-between gap-2"><b className="text-lg tabular-nums">{formatDop(row.amount)}</b><StatusBadge status={row.reversedAt ? "reversed" : "registered"}/></div>
-              <p className="text-xs leading-5 text-secondary">{dates.format(new Date(row.receivedAt))}<br/>{row.type === "down_payment" ? "Inicial" : "Pago de cuotas"} · {RECEIPT_METHODS[row.method as keyof typeof RECEIPT_METHODS] ?? row.method}<br/>{row.contract} · {row.branch ?? "Sin sucursal"}</p>
+              <p className="text-xs leading-5 text-secondary">{dates.format(new Date(row.receivedAt))}<br/>{row.receiptNumber ?? row.id}<br/>{row.type === "down_payment" ? "Inicial" : "Pago de cuotas"} · {RECEIPT_METHODS[row.method as keyof typeof RECEIPT_METHODS] ?? row.method}<br/>{row.contract} · {row.branch ?? "Sin sucursal"}</p>
               <p className="break-words text-xs text-muted">Referencia: {row.reference || "Sin referencia"}</p><p className="break-all font-mono text-[10px] text-muted">Folio: {row.id}</p>
               {actionLink(row)}
             </article>)}</div>
             <div className="hidden overflow-x-auto md:block"><table className="km-table min-w-[980px]"><thead><tr><th>Cliente</th><th>Fecha / folio</th><th>Tipo / contrato</th><th>Monto</th><th>Método / referencia</th><th>Estado</th><th>Comprobante</th></tr></thead><tbody>{result.rows.map((row) => <tr key={row.id}>
               <td><CustomerLabel name={row.customerName} photoUrl={row.photoUpdatedAt ? `/api/clientes/${row.customerId}/foto?v=${encodeURIComponent(row.photoUpdatedAt)}` : undefined}/><p className="ml-12 mt-1 text-[11px] text-muted">{row.identity ?? "Sin documento"}<br/>{row.branch ?? "Sin sucursal"}</p></td>
-              <td className="text-xs"><span className="block whitespace-nowrap">{dates.format(new Date(row.receivedAt))}</span><span title={row.id} className="mt-1 block font-mono text-[10px] text-muted">{row.id.slice(0, 8).toUpperCase()}…</span></td>
+              <td className="text-xs"><span className="block whitespace-nowrap">{dates.format(new Date(row.receivedAt))}</span><span title={row.id} className="mt-1 block font-mono text-[10px] text-muted">{row.receiptNumber ?? `${row.id.slice(0, 8).toUpperCase()}…`}</span></td>
               <td className="text-xs">{row.type === "down_payment" ? "Inicial" : "Pago de cuotas"}<span className="mt-1 block text-[11px] text-muted">{row.contract}</span></td>
               <td className="km-amount font-semibold">{formatDop(row.amount)}</td><td className="max-w-48 break-words text-xs">{RECEIPT_METHODS[row.method as keyof typeof RECEIPT_METHODS] ?? row.method}<span className="mt-1 block text-[11px] text-muted">{row.reference || "Sin referencia"}</span></td>
               <td><StatusBadge status={row.reversedAt ? "reversed" : "registered"}/></td><td>{actionLink(row)}</td>

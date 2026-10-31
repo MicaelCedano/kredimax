@@ -1,0 +1,43 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { ArrowLeft, ArrowUpRight, Check, FilePenLine, PackageCheck } from "lucide-react";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { Topbar } from "@/components/dashboard/topbar";
+import { Feedback } from "@/components/ui/feedback";
+import { PageHeader } from "@/components/ui/page-header";
+import { getTenantAccess } from "@/lib/security/tenant-access";
+import { formatDop } from "@/lib/format-money";
+import { isoDateInTimeZone } from "@/lib/business-date";
+import { loadHandoverContext } from "@/modules/financing/handover-context.server";
+import { handoverFields, missingHandoverFields } from "@/modules/financing/handover-requirements";
+import { HandoverProfileForm } from "@/modules/financing/handover-profile-form";
+import { LoanActivationForm } from "@/modules/financing/activation-form";
+
+export default async function HandoverPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ estado?: string }> }) {
+  const [{ id }, { estado }, access, write, approve, payment] = await Promise.all([params, searchParams, getTenantAccess("financing.read"), getTenantAccess("customers.write"), getTenantAccess("financing.activate"), getTenantAccess("payments.record")]);
+  if (!access.ok) { if (access.reason === "unauthenticated") redirect("/login"); notFound(); }
+  const context = await loadHandoverContext(id, access);
+  if (!context) notFound();
+  const { customer, loan, contract, quote } = context;
+  const missing = missingHandoverFields(customer);
+  const canEdit = write.ok && write.membership.tenant_id === access.membership.tenant_id && (write.membership.role === "tenant_admin" || write.membership.branch_id === customer.branch_id);
+  const canDeliver = approve.ok && payment.ok && approve.membership.tenant_id === access.membership.tenant_id && payment.membership.tenant_id === access.membership.tenant_id
+    && (approve.membership.role === "tenant_admin" || approve.membership.branch_id === loan.branch_id) && (payment.membership.role === "tenant_admin" || payment.membership.branch_id === loan.branch_id);
+  const pending = loan.status === "approved";
+  return <div className="min-h-screen bg-canvas"><Sidebar/><Topbar/><main id="main-content" tabIndex={-1} className="km-main px-4 sm:px-7 lg:ml-[244px]">
+    <Link href={`/solicitudes/${id}`} className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-accent"><ArrowLeft size={16} aria-hidden/>Volver a la solicitud</Link>
+    <PageHeader title={pending ? "Preparar entrega del equipo" : "Entrega del financiamiento"} description={<>{customer.full_name} · {contract.contract_number}</>}/>
+    {estado === "datos-completados" && <div className="mb-5"><Feedback tone="success">Los datos del expediente se guardaron. Ahora puedes revisar el ejemplo y preparar el documento definitivo para firma.</Feedback></div>}
+    {!pending ? <section className="km-panel p-6"><h2 className="flex items-center gap-2 text-lg font-semibold"><PackageCheck size={21} className="text-accent" aria-hidden/>{loan.delivered_at ? "Entrega ya registrada" : "Este financiamiento ya no está pendiente de entrega"}</h2><p className="mt-3 text-sm leading-6 text-muted">Estado: {loan.status === "active" ? "Activo" : loan.status === "paid_off" ? "Pagado" : loan.status === "cancelled" ? "Cancelado" : loan.status}.{loan.delivered_at ? ` Fecha de entrega: ${loan.delivered_at}.` : ""} No se volverá a registrar el inicial desde esta pantalla.</p><Link href={`/financiamientos/${loan.id}`} className="km-secondary mt-5">Ver financiamiento</Link></section> : <>
+      <ol aria-label="Etapas para la entrega" className="mb-6 grid gap-3 sm:grid-cols-3">{[{ title: "Completar expediente", subtitle: missing.length ? `${missing.length} datos por revisar` : "Datos completos", done: missing.length === 0 }, { title: "Preparar el acta", subtitle: "Ejemplo provisional disponible", done: false }, { title: "Firmar y entregar", subtitle: "Documento definitivo e inicial", done: false }].map((step, index) => <li key={step.title} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-semibold text-accent">{step.done ? <Check size={17} aria-label="Completo"/> : index + 1}</span><span><span className="block text-sm font-semibold">{step.title}</span><span className="mt-1 block text-xs text-muted">{step.subtitle}</span></span></li>)}</ol>
+      <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]"><div className="min-w-0 space-y-5">
+        <section id="expediente-entrega" className="km-panel p-5 sm:p-6"><h2 className="text-lg font-semibold">1. Completar el expediente</h2><p className="mt-2 text-sm leading-6 text-muted">Documento, teléfono, dirección, ubicación y referencia personal deben estar completos antes de entregar. Los importes y las condiciones aprobadas se conservan.</p>
+          <ul aria-label="Revisión de datos obligatorios" className="mt-4 grid gap-2 text-xs sm:grid-cols-2">{handoverFields.map((field) => { const complete = !missing.some((item) => item.key === field.key); return <li key={field.key} className={`flex items-center gap-2 rounded-xl px-3 py-2 ${complete ? "bg-positive-soft text-positive" : "bg-warning-soft text-warning"}`}><span aria-hidden>{complete ? "✓" : "•"}</span>{field.label}: {complete ? "completo" : "pendiente"}</li>; })}</ul>
+          {canEdit ? <HandoverProfileForm applicationId={id} profile={customer}/> : <div className="mt-5"><Feedback tone="warning">Tu rol puede consultar esta entrega. Un usuario con permiso de edición de clientes debe completar los datos faltantes.</Feedback></div>}
+        </section>
+        <section className="km-panel p-5 sm:p-6"><h2 className="flex items-center gap-2 text-lg font-semibold"><FilePenLine size={20} className="text-accent" aria-hidden/>2. Preparar y revisar el acta</h2><p className="mt-3 text-sm leading-6 text-secondary">Mientras recibes el modelo definitivo, tienes un ejemplo con los datos del cliente, el equipo y las condiciones ya aprobadas. Puedes revisarlo e imprimirlo como borrador. Guarda primero los cambios del paso 1 para verlos reflejados en el ejemplo.</p><div className="mt-4"><Feedback tone="warning">Ejemplo provisional: no firmar, no usar para entregar ni registrar como evidencia. El acta definitiva debe ser la que te entregue el profesional que la prepare.</Feedback></div><Link href={`/solicitudes/${id}/acta`} className="km-secondary mt-5">Ver ejemplo provisional del acta<ArrowUpRight size={16} aria-hidden/></Link></section>
+        <section className="km-panel p-5 sm:p-6"><h2 className="text-lg font-semibold">3. Registrar firma, inicial y entrega</h2><p className="mt-2 text-sm leading-6 text-muted">Cuando el cliente firme el documento definitivo y recibas el inicial, verifica el expediente y registra la entrega. El ejemplo no se marca como firmado automáticamente.</p>{canDeliver ? <LoanActivationForm applicationId={id} loanId={loan.id} idempotencyKey={crypto.randomUUID()} initialAmount={formatDop(loan.down_payment)} today={isoDateInTimeZone(new Date())} profileComplete={missing.length === 0}/> : <div className="mt-4"><Feedback tone="warning">Esta operación requiere permiso para entregar un financiamiento aprobado y registrar pagos en la sucursal.</Feedback></div>}</section>
+      </div><aside aria-label="Resumen de la entrega" className="km-panel min-w-0 p-5 xl:sticky xl:top-24"><h2 className="text-sm font-semibold">Equipo aprobado</h2><p className="mt-3 break-words text-xl font-semibold tracking-tight">{[quote.device?.brand, quote.device?.model].filter(Boolean).join(" ") || "Ver equipo en la solicitud"}</p><p className="mt-2 break-all font-mono text-xs text-muted">IMEI: {quote.device?.imei || "No disponible"}</p><dl className="mt-5 flex flex-col gap-4 border-t border-line pt-5 text-sm">{[["Precio de venta", formatDop(loan.sale_price)], ["Inicial a registrar", formatDop(loan.down_payment)], ["Capital financiado", formatDop(loan.principal)]].map(([label, amount]) => <div key={label} className="flex flex-wrap justify-between gap-2"><dt className="text-muted">{label}</dt><dd className="km-amount font-semibold">{amount}</dd></div>)}</dl><p className="mt-5 border-t border-line pt-4 text-xs leading-5 text-muted">El saldo no se activa hasta confirmar el inicial y la entrega mediante la operación existente.</p></aside></div>
+    </>}
+  </main></div>;
+}

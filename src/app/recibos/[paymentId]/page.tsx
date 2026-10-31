@@ -17,7 +17,7 @@ export default async function PaymentReceiptPage({ params }: { params: Promise<{
   }
   const tenantId = access.membership.tenant_id;
   const { data: payment, error: paymentError } = await access.supabase.from("payments")
-    .select("id,loan_id,amount,currency,received_at,payment_method,reference,payment_type,reversed_at,reversal_reason")
+    .select("id,receipt_number,loan_id,amount,currency,received_at,payment_method,reference,payment_type,reversed_at,reversal_reason")
     .eq("tenant_id", tenantId).eq("id", paymentId).maybeSingle();
   if (paymentError || !payment) notFound();
 
@@ -49,7 +49,7 @@ export default async function PaymentReceiptPage({ params }: { params: Promise<{
     <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:hidden"><div className="flex flex-wrap gap-4"><Link href="/recibos" className="text-sm font-semibold text-accent">← Todos los vouchers</Link><Link href={`/financiamientos/${loanResult.data.id}`} className="text-sm font-semibold text-accent">← Estado de cuenta</Link></div><PrintButton/></div>
     <article className="km-document km-panel overflow-hidden"><div className="flex flex-wrap items-center justify-between gap-4 border-b border-line px-5 py-5 sm:px-8"><p className="text-[25px] font-bold tracking-[-1px] text-ink">Kredi<span className="text-accent">Max</span></p><span className="flex items-center gap-2 text-xs text-muted"><ReceiptText size={16} aria-hidden/>Comprobante de pago</span></div><div className="p-5 sm:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
-        <div><h1 className="text-2xl font-bold tracking-tight text-ink">{isReversed ? "Recibo revertido" : "Recibo de pago"}</h1><p className="mt-1 text-sm text-muted">{paymentType} · {contractResult.data.contract_number}</p></div>
+        <div><h1 className="text-2xl font-bold tracking-tight text-ink">{isReversed ? "Recibo revertido" : "Recibo de pago"}</h1><p className="mt-1 font-mono text-sm font-semibold">{payment.receipt_number ?? `Histórico · ${payment.id}`}</p><p className="mt-1 text-sm text-muted">{paymentType} · Financiamiento {contractResult.data.contract_number}</p></div>
         <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-semibold ${isReversed ? "bg-danger-soft text-danger" : "bg-positive-soft text-positive"}`}>{isReversed ? <RotateCcw size={13} aria-hidden/> : <Check size={13} aria-hidden/>}{isReversed ? "REVERSADO" : "REGISTRADO"}</div>
       </header>
       <section aria-label="Monto del comprobante" className={`mt-6 rounded-xl border p-5 sm:p-6 ${isReversed ? "border-danger-line bg-danger-soft" : "border-accent-line bg-accent-soft/60"}`}><p className="text-xs font-medium text-muted">{isReversed ? "Monto original revertido" : "Monto recibido"}</p><p className="km-amount mt-2 break-words text-[32px] font-bold tracking-tight text-ink sm:text-[38px]">{formatDop(payment.amount)} <span className="text-sm font-medium text-muted">{payment.currency}</span></p></section>
@@ -65,7 +65,8 @@ export default async function PaymentReceiptPage({ params }: { params: Promise<{
         {allocations.length ? <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs sm:text-sm"><thead className="bg-subtle text-muted"><tr><th className="px-3 py-2.5">Cuota</th><th className="px-3 py-2.5">Vencimiento</th><th className="px-3 py-2.5 text-right">Aplicado</th></tr></thead><tbody>{allocations.map((row) => { const installment = installments.get(row.installment_id); return <tr key={row.installment_id} className="border-t border-line"><td className="px-3 py-3">{installment?.sequence ?? "—"}</td><td className="px-3 py-3">{installment?.due_date ?? "—"}</td><td className="px-3 py-3 text-right font-semibold">{formatDop(row.amount)}</td></tr>; })}</tbody></table></div> : <p className="mt-2 rounded-lg bg-subtle p-3 text-xs text-secondary">Pago inicial registrado fuera del cronograma de cuotas.</p>}
       </section>
       
-      <section className="mt-4 border-t border-line pt-5"><h2 className="text-sm font-bold">Evidencia del pago</h2>
+      {!isReversed && <section aria-label="Firmas del comprobante" className="mb-6 mt-16 grid grid-cols-2 gap-8 text-center text-xs"><div className="border-t border-field-border pt-3">Firma del cliente<p className="mt-2 text-muted">{customerResult.data.full_name}</p></div><div className="border-t border-field-border pt-3">Firma de quien recibe<p className="mt-2 text-muted">Fecha: __________________</p></div></section>}
+      <section className="mt-4 border-t border-line pt-5 print:hidden"><h2 className="text-sm font-bold">Evidencia del pago</h2>
         {evidenceResult.error ? <p role="alert" className="mt-2 text-sm text-danger">No se pudo cargar la evidencia. Vuelve a intentarlo.</p> : evidenceResult.data ? <>
           <p className="mt-2 text-xs text-muted">{evidenceResult.data.evidence_kind === "signed_cash_receipt" ? "Recibo firmado por el cliente" : evidenceResult.data.evidence_kind === "bank_transfer_voucher" ? "Voucher de transferencia" : "Comprobante adjunto"} · Guardado el {dateTime.format(new Date(evidenceResult.data.created_at))}</p>
           <a href={`/api/recibos/${payment.id}/evidencia`} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-xs font-semibold text-accent print:hidden">Abrir imagen completa</a>

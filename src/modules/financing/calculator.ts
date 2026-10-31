@@ -9,7 +9,7 @@ export const DEFAULT_FINANCING_SETTINGS = {
   recoveryEnabled: false,
 } as const;
 
-export const DOWN_PAYMENT_PERCENT_OPTIONS = ["30.00", "35.00", "40.00", "45.00", "50.00"] as const;
+export const DOWN_PAYMENT_PERCENT_OPTIONS = ["30.00", "35.00", "40.00", "45.00", "50.00", "55.00", "60.00", "65.00", "70.00", "75.00", "80.00"] as const;
 
 export function downPaymentOptions(configuredPercent: string) {
   const configuredBps = parseRateToBasisPoints(configuredPercent);
@@ -22,7 +22,7 @@ export function downPaymentOptions(configuredPercent: string) {
 export function resolveDownPaymentPercent(selectedPercent: string, configuredPercent: string) {
   const selectedBps = parseRateToBasisPoints(selectedPercent || configuredPercent);
   const selected = downPaymentOptions(configuredPercent).find((option) => parseRateToBasisPoints(option) === selectedBps);
-  if (!selected) throw new Error("Selecciona un inicial de 30%, 35%, 40%, 45% o 50%.");
+  if (!selected) throw new Error("Selecciona uno de los porcentajes de inicial disponibles, de 30% a 80% en pasos de 5%, o el porcentaje configurado por administración.");
   return selected;
 }
 

@@ -2,21 +2,21 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useSyncExternalStore } from "react";
-import { APPEARANCE_KEY, parseAppearance, resolveAppearance, type Appearance } from "@/lib/appearance";
+import { APPEARANCE_KEY, DEFAULT_APPEARANCE, parseAppearance, resolveAppearance, type Appearance } from "@/lib/appearance";
 
 const eventName = "kredimax:appearance";
 let volatilePreference: Appearance | null = null;
 function getSnapshot(): Appearance {
   if (volatilePreference) return volatilePreference;
   try { return parseAppearance(localStorage.getItem(APPEARANCE_KEY)); }
-  catch { return volatilePreference ?? "system"; }
+  catch { return volatilePreference ?? DEFAULT_APPEARANCE; }
 }
 function subscribe(callback: () => void) {
   window.addEventListener("storage", callback);
   window.addEventListener(eventName, callback);
   return () => { window.removeEventListener("storage", callback); window.removeEventListener(eventName, callback); };
 }
-const serverSnapshot = (): Appearance => "system";
+const serverSnapshot = (): Appearance => DEFAULT_APPEARANCE;
 function updateAppearance(value: Appearance) {
   try { localStorage.setItem(APPEARANCE_KEY, value); volatilePreference = null; }
   catch { volatilePreference = value; }

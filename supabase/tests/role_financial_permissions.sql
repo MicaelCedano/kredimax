@@ -52,9 +52,9 @@ DECLARE
     '13000000-0000-4000-8000-000000000006'::uuid
   ];
   v_roles text[]:=ARRAY['tenant_admin','branch_manager','sales','cashier','collections','auditor'];
-  v_can_record boolean[]:=ARRAY[true,true,false,true,true,false];
+  v_can_record boolean[]:=ARRAY[true,true,true,true,true,false];
   v_can_report boolean[]:=ARRAY[true,true,false,false,true,true];
-  v_can_read_payments boolean[]:=ARRAY[true,true,false,true,true,true];
+  v_can_read_payments boolean[]:=ARRAY[true,true,true,true,true,true];
   v_payment_ids uuid[]:='{}'::uuid[];
   v_payment_id uuid;
   v_count integer;
@@ -119,25 +119,28 @@ BEGIN
     FOREACH v_permission_key IN ARRAY ARRAY[
       'customers.read','customers.write','financing.read','financing.write','financing.approve',
       'payments.read','payments.record','devices.read','devices.write','mdm.command',
-      'reports.read','tenant.manage','audit.read','branches.read','branches.manage','settings.manage'
+      'reports.read','tenant.manage','audit.read','branches.read','branches.manage','settings.manage',
+      'cash.read','cash.close','cash.manage','financing.activate'
     ] LOOP
       v_expected_permission := CASE v_roles[i]
         WHEN 'tenant_admin' THEN true
         WHEN 'branch_manager' THEN v_permission_key=ANY(ARRAY[
           'customers.read','customers.write','financing.read','financing.write','financing.approve',
-          'payments.read','payments.record','devices.read','devices.write','reports.read','branches.read','branches.manage'
+          'payments.read','payments.record','devices.read','devices.write','reports.read','branches.read','branches.manage',
+          'cash.read','cash.close','cash.manage','financing.activate'
         ])
         WHEN 'sales' THEN v_permission_key=ANY(ARRAY[
-          'customers.read','customers.write','financing.read','financing.write','devices.read','devices.write'
+          'customers.read','customers.write','financing.read','financing.write','devices.read','devices.write',
+          'payments.read','payments.record','cash.read','cash.close','financing.activate'
         ])
         WHEN 'cashier' THEN v_permission_key=ANY(ARRAY[
-          'customers.read','financing.read','payments.read','payments.record'
+          'customers.read','financing.read','payments.read','payments.record','cash.read','cash.close'
         ])
         WHEN 'collections' THEN v_permission_key=ANY(ARRAY[
-          'customers.read','financing.read','payments.read','payments.record','reports.read'
+          'customers.read','financing.read','payments.read','payments.record','reports.read','cash.read','cash.close'
         ])
         WHEN 'auditor' THEN v_permission_key=ANY(ARRAY[
-          'customers.read','financing.read','payments.read','devices.read','reports.read','audit.read','branches.read'
+          'customers.read','financing.read','payments.read','devices.read','reports.read','audit.read','branches.read','cash.read','cash.manage'
         ])
         ELSE false
       END;
@@ -194,7 +197,7 @@ BEGIN
     END IF;
   END LOOP;
 
-  IF cardinality(v_payment_ids)<>4 THEN RAISE EXCEPTION 'Expected four authorized role payments'; END IF;
+  IF cardinality(v_payment_ids)<>5 THEN RAISE EXCEPTION 'Expected five authorized role payments'; END IF;
   PERFORM set_config('request.jwt.claim.sub','13000000-0000-4000-8000-000000000003',true);
   PERFORM set_config('request.jwt.claims','{"sub":"13000000-0000-4000-8000-000000000003","aal":"aal1"}',true);
   BEGIN
@@ -210,7 +213,7 @@ BEGIN
     PERFORM set_config('request.jwt.claim.sub',v_users[i]::text,true);
     PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',v_users[i]::text,'aal','aal1')::text,true);
     SELECT count(*) INTO v_count FROM public.payments WHERE tenant_id='24000000-0000-4000-8000-000000000001';
-    IF (v_count>0) IS DISTINCT FROM (v_roles[i]<>'sales') OR (v_count>0 AND v_count<>4) THEN
+    IF v_count<>5 THEN
       RAISE EXCEPTION 'Unexpected payment visibility for role %: %',v_roles[i],v_count;
     END IF;
   END LOOP;
@@ -229,7 +232,7 @@ BEGIN
   END LOOP;
   SELECT count(*) INTO v_count FROM public.ledger_entries WHERE tenant_id='24000000-0000-4000-8000-000000000001'
     AND entry_type='payment_reversal';
-  IF v_count<>4 OR EXISTS(SELECT 1 FROM public.installments WHERE id='2a000000-0000-4000-8000-000000000001' AND amount_paid<>0) THEN
+  IF v_count<>5 OR EXISTS(SELECT 1 FROM public.installments WHERE id='2a000000-0000-4000-8000-000000000001' AND amount_paid<>0) THEN
     RAISE EXCEPTION 'Authorized reversals did not restore allocations and compensating ledger';
   END IF;
 

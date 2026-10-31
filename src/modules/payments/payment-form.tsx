@@ -1,5 +1,6 @@
 "use client";
 import { PaymentEvidenceInput } from "@/modules/payments/evidence-input";
+import { PrintBeforePayment } from "@/modules/payments/print-before-payment";
 
 import { useActionState, useState } from "react";
 import { MoneyInput } from "@/components/forms/money-input";
@@ -19,6 +20,7 @@ const messages: Record<string, string> = {
   invalid: "Revisa el monto, método y referencia del pago.",
   "exceeds-balance": "El monto supera el saldo pendiente del financiamiento.",
   "save-error": "No se pudo guardar el pago. Corrige el dato indicado y vuelve a intentar.",
+  "cash-closed": "Tu caja de cuotas ya está cerrada para hoy. No se guardó este pago.",
 };
 
 type PaymentFormProps = {
@@ -55,6 +57,7 @@ export function PaymentForm({ loanId, balance, paymentLimit, idempotencyKey, amo
     <input type="hidden" name="loanId" value={loanId}/>
     <input type="hidden" name="idempotencyKey" value={idempotencyKey}/>
     {expanded ? <><label className="block text-xs font-semibold text-secondary">Monto a recibir (RD$){amountInput}</label><label className="block text-xs font-semibold text-secondary">Método de pago{methodInput}</label><label className="block text-xs font-semibold text-secondary">Referencia <span className="font-normal text-muted">· opcional</span>{referenceInput}</label><p className="flex gap-2 rounded-lg bg-accent-soft p-3 text-xs leading-5 text-accent"><ShieldCheck size={16} className="mt-0.5 shrink-0"/>El pago se aplicará primero a las cuotas más antiguas. Puedes abonar o cubrir varias cuotas, hasta el saldo del financiamiento.</p></> : <>{amountInput}{methodInput}{referenceInput}</>}
+    <PrintBeforePayment loanId={loanId} type="installment" idempotencyKey={idempotencyKey}/>
     <PaymentEvidenceInput key={method} method={method} disabled={pending}/>
     <SubmitButton disabled={pending} className={expanded ? "km-primary w-full" : "w-full rounded bg-brand px-2.5 py-2 font-semibold text-white disabled:cursor-wait disabled:opacity-60 md:w-auto md:py-1.5"}>{pending ? "Guardando…" : expanded ? "Confirmar pago" : "Registrar"}{expanded && <ArrowRight size={16}/>}</SubmitButton>
     {state?.state && <span role="alert" className="text-xs text-danger md:basis-full">{messages[state.state] ?? "No se pudo completar el pago."}</span>}

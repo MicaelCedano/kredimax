@@ -4,20 +4,21 @@ import {
 } from "lucide-react";
 
 export const navigation = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Solicitudes", href: "/solicitudes", icon: ClipboardList },
-  { label: "Clientes", href: "/clientes", icon: Users },
-  { label: "Financiamientos", href: "/financiamientos", icon: BriefcaseBusiness },
-  { label: "Cobros", href: "/cobros", icon: CircleDollarSign },
-  { label: "Vouchers", href: "/recibos", icon: ReceiptText },
-  { label: "Dispositivos", href: "/dispositivos", icon: Smartphone },
-  { label: "MDM · desactivado", href: "/mdm", icon: LockKeyhole },
-  { label: "Reportes", href: "/reportes", icon: BarChart3 },
-  { label: "Auditoría", href: "/auditoria", icon: ScrollText },
-  { label: "Sucursales", href: "/sucursales", icon: Building2 },
-  { label: "Usuarios", href: "/usuarios", icon: Users },
-  { label: "Mi perfil", href: "/perfil", icon: UserRound },
-  { label: "Configuración", href: "/configuracion", icon: Settings2 },
+  { label: "Inicio", href: "/", icon: LayoutDashboard, permission: null },
+  { label: "Solicitudes", href: "/solicitudes", icon: ClipboardList, permission: "financing.read" },
+  { label: "Clientes", href: "/clientes", icon: Users, permission: "customers.read" },
+  { label: "Financiamientos", href: "/financiamientos", icon: BriefcaseBusiness, permission: "financing.read" },
+  { label: "Cobros", href: "/cobros", icon: CircleDollarSign, permission: "payments.read" },
+  { label: "Recibos", href: "/recibos", icon: ReceiptText, permission: "payments.read" },
+  { label: "Cuadre de cajas", href: "/cajas", icon: ClipboardList, permission: "cash.read" },
+  { label: "Dispositivos", href: "/dispositivos", icon: Smartphone, permission: "devices.read" },
+  { label: "MDM · desactivado", href: "/mdm", icon: LockKeyhole, permission: "mdm.command" },
+  { label: "Reportes", href: "/reportes", icon: BarChart3, permission: "reports.read" },
+  { label: "Auditoría", href: "/auditoria", icon: ScrollText, permission: "audit.read" },
+  { label: "Sucursales", href: "/sucursales", icon: Building2, permission: "branches.read" },
+  { label: "Usuarios", href: "/usuarios", icon: Users, permission: "tenant.manage" },
+  { label: "Mi perfil", href: "/perfil", icon: UserRound, permission: null },
+  { label: "Configuración", href: "/configuracion", icon: Settings2, permission: "settings.manage" },
 ] as const;
 
 export const money = (amount: number) => new Intl.NumberFormat("es-DO", {

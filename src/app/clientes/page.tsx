@@ -17,6 +17,7 @@ import { NewCustomerFormWithPreview } from "@/modules/credit-evaluation/new-cust
 import { loadTenantCreditPolicy } from "@/modules/credit-evaluation/service";
 import { CustomerLabel } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { portfolioFilter, responsibleLabel, type PortfolioSeller } from "@/modules/customers/portfolio";
 
 const messages: Record<string, string> = {
   creado: "El cliente se guardó y su evaluación crediticia inicial quedó registrada.",
@@ -56,9 +57,9 @@ function scoreBadgeStyle(level: CreditRiskLevel) {
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; estado?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; estado?: string; page?: string; seller?: string }>;
 }) {
-  const { q = "", estado, page: rawPage } = await searchParams;
+  const { q = "", estado, page: rawPage, seller: rawSeller } = await searchParams;
   const page = Math.max(1, Math.min(100000, Number.parseInt(rawPage ?? "1", 10) || 1));
   const pageSize = 50;
   const searchTerm = sanitizeSearchTerm(q);
@@ -67,7 +68,8 @@ export default async function CustomersPage({
     getTenantAccess("customers.write"),
   ]);
   if (!access.ok && access.reason === "unauthenticated") redirect("/login");
-  const [branchResult, policy] = access.ok
+  const seller = portfolioFilter(rawSeller, access.ok && access.membership.role === "sales" ? access.userId : "");
+  const [branchResult, policy, sellerResult] = access.ok
     ? await Promise.all([
         access.supabase
           .from("branches")
@@ -75,8 +77,11 @@ export default async function CustomersPage({
           .eq("tenant_id", access.membership.tenant_id)
           .order("name"),
         loadTenantCreditPolicy(access.supabase, access.membership.tenant_id),
+        access.supabase.rpc("customer_portfolio_sellers", { p_tenant_id: access.membership.tenant_id }),
       ])
-    : [{ data: [], error: null }, undefined];
+    : [{ data: [], error: null }, undefined, { data: [], error: null }];
+
+  const sellers = (sellerResult.data ?? []) as PortfolioSeller[];
 
   const branches = branchResult.data ?? [];
   const defaultBranchId = access.ok
@@ -94,10 +99,12 @@ export default async function CustomersPage({
     let query = access.supabase
       .from("customers")
       .select(
-        "id, full_name, identity_number, phone, address, employer, monthly_income, verified_monthly_income, occupation, employment_type, employment_tenure_months, income_verification_status, identity_verification_status, created_at",
+        "id, full_name, identity_number, phone, address, employer, monthly_income, verified_monthly_income, occupation, employment_type, employment_tenure_months, income_verification_status, identity_verification_status, created_at, created_by, created_by_name",
         { count: "exact" },
       )
       .eq("tenant_id", access.membership.tenant_id);
+    if (seller === "unassigned") query = query.is("created_by", null);
+    else if (seller) query = query.eq("created_by", seller);
     if (searchTerm) {
       query = query.or(
         `full_name.ilike.%${searchTerm}%,identity_number.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,employer.ilike.%${searchTerm}%`,
@@ -147,7 +154,7 @@ export default async function CustomersPage({
 
   const totalPages = Math.max(1, Math.ceil(count / pageSize));
   const accessReason = access.ok ? undefined : access.reason;
-  const readError = error ? "unavailable" : undefined;
+  const readError = error || sellerResult.error ? "unavailable" : undefined;
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -173,8 +180,9 @@ export default async function CustomersPage({
         <Notice state={readError} error />
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <section className="km-panel min-w-0 overflow-hidden">
-            <PanelHeading title="Expedientes" description={<>Página {page} de {totalPages} · búsqueda en toda la empresa.
+            <PanelHeading title="Expedientes" description={<>Página {page} de {totalPages} · cartera de clientes por responsable.
                 </>}><form className="relative w-full sm:w-64">
+                <input type="hidden" name="seller" value={seller}/>
                 <Search
                   size={15}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
@@ -187,6 +195,18 @@ export default async function CustomersPage({
                   className="km-input w-full pl-9"
                 />
               </form></PanelHeading>
+            <form action="/clientes" className="flex flex-wrap items-end gap-3 border-b border-line px-5 py-3">
+              <input type="hidden" name="q" value={q}/>
+              <label className="text-xs font-semibold text-secondary">Responsable de cobro
+                <select name="seller" defaultValue={seller} className="km-input mt-1 block w-full">
+                  <option value="">Todas las carteras visibles</option>
+                  {access.ok && <option value={access.userId}>Mi cartera</option>}
+                  {sellers.filter(item => !access.ok || item.id !== access.userId).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  <option value="unassigned">Sin responsable (registros anteriores)</option>
+                </select>
+              </label>
+              <button type="submit" className="km-secondary">Filtrar cartera</button>
+            </form>
             {!access.ok || error ? (
               <div className="px-5 py-12 text-center text-sm text-muted">
                 No fue posible cargar los expedientes.
@@ -244,6 +264,7 @@ export default async function CustomersPage({
                               : "Sin calificar"}
                           </span>
                         </div>
+                        <p className="mt-2 text-xs text-secondary">Registrado por / Responsable de cobro: {responsibleLabel(row.created_by, row.created_by_name)}</p>
                         <dl className="my-4 grid grid-cols-2 gap-3 text-xs">
                           <div>
                             <dt className="text-muted">Documento</dt>
@@ -289,6 +310,7 @@ export default async function CustomersPage({
                       <tr>
                         <th className="px-5 py-3 font-semibold">Cliente</th>
                         <th className="px-4 py-3 font-semibold">Documento / Teléfono</th>
+                        <th className="px-4 py-3 font-semibold">Registrado por / Responsable de cobro</th>
                         <th className="px-4 py-3 font-semibold">Empleo / empresa</th>
                         <th className="px-4 py-3 font-semibold">Perfil crediticio</th>
                         <th className="px-5 py-3 text-right font-semibold">Acción</th>
@@ -355,6 +377,7 @@ export default async function CustomersPage({
                                 {row.phone || "Sin teléfono"}
                               </span>
                             </td>
+                            <td className="px-4 py-3.5 text-secondary">{responsibleLabel(row.created_by, row.created_by_name)}</td>
                             <td className="px-4 py-3.5 text-secondary">
                               <span className="block font-medium text-secondary">
                                 {row.employer || row.occupation || "—"}
@@ -410,7 +433,7 @@ export default async function CustomersPage({
                         ? "pointer-events-none text-muted"
                         : "font-semibold text-accent"
                     }
-                    href={`/clientes?q=${encodeURIComponent(q)}&page=${page - 1}`}
+                    href={`/clientes?q=${encodeURIComponent(q)}&seller=${encodeURIComponent(seller)}&page=${page - 1}`}
                   >
                     Anterior
                   </Link>
@@ -424,7 +447,7 @@ export default async function CustomersPage({
                         ? "pointer-events-none text-muted"
                         : "font-semibold text-accent"
                     }
-                    href={`/clientes?q=${encodeURIComponent(q)}&page=${page + 1}`}
+                    href={`/clientes?q=${encodeURIComponent(q)}&seller=${encodeURIComponent(seller)}&page=${page + 1}`}
                   >
                     Siguiente
                   </Link>
@@ -446,6 +469,7 @@ export default async function CustomersPage({
           </section>
           <section className="km-panel h-fit p-5">
             <PanelHeading title="Nuevo cliente" description="Registra el expediente y estima su capacidad crediticia al instante." icon={UserPlus} inset="compact"/>
+            <p className="mb-4 text-xs leading-5 text-secondary">El usuario que registre al cliente quedará como responsable de sus cobros.</p>
             {writeAccess.ok ? (
               branches.length ? (
                 <NewCustomerFormWithPreview

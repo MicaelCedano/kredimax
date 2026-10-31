@@ -57,7 +57,7 @@ function Field({ label, children, hint, error }: { label: string; children: Reac
 
 function SaveButton() {
   const { pending } = useFormStatus();
-  return <button disabled={pending} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-wait disabled:opacity-70"><ClipboardList size={16}/>{pending ? "Guardando y enviando..." : "Guardar y enviar a evaluación"}</button>;
+  return <button disabled={pending} aria-busy={pending} className="km-primary w-full disabled:cursor-wait disabled:opacity-70"><ClipboardList size={16}/>{pending ? "Guardando y enviando..." : "Guardar y enviar a evaluación"}</button>;
 }
 
 const applicationErrorMessages: Record<string, string> = {
@@ -515,14 +515,14 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
         <p className="mt-5 rounded-lg bg-accent-soft p-3 text-xs leading-5 text-accent">La solicitud quedará pendiente de evaluación. Su aprobación y la activación del financiamiento se realizan después.</p>
       </section>}
       <div className="flex items-center justify-between gap-3">
-        {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-secondary hover:bg-subtle"><ArrowLeft size={15}/>Anterior</button> : <span className="text-xs leading-5 text-muted">Paso {step + 1} de 4</span>}
+        {step > 0 ? <button type="button" onClick={() => setStep((current) => current - 1)} className="km-secondary"><ArrowLeft size={15}/>Anterior</button> : <span className="text-xs leading-5 text-muted">Paso {step + 1} de 4</span>}
         {step < 3 && <button type="button" onClick={nextStep} className="km-primary">Continuar<ArrowRight size={16}/></button>}
       </div>
     </div>
 
     <aside aria-label="Resumen financiero de la solicitud" tabIndex={0} className="space-y-4 lg:sticky lg:top-[96px] lg:max-h-[calc(100dvh-112px)] lg:overflow-y-auto lg:rounded-2xl">
       <section className="km-panel km-quote overflow-hidden">
-        <div className="km-wallet px-5 py-6 text-white"><p className="text-xs font-medium text-white/80">Cotización preliminar · DOP</p><p className="mt-2 text-2xl font-bold">{quote ? currency(quote.fixedInstallment) : "RD$ —"}</p><p className="mt-1 text-xs text-white/75">{hasVariableInstallments(quote?.schedule) ? "Cuota inicial" : "Cuota fija"} {frequency === "fortnightly" ? "quincenal" : "mensual"} propuesta</p></div>
+        <div className="km-wallet px-5 py-6 text-white"><p className="text-xs font-medium text-white">Cotización preliminar · DOP</p><p className="mt-2 text-2xl font-bold">{quote ? currency(quote.fixedInstallment) : "RD$ —"}</p><p className="mt-1 text-xs text-white">{hasVariableInstallments(quote?.schedule) ? "Cuota inicial" : "Cuota fija"} {frequency === "fortnightly" ? "quincenal" : "mensual"} propuesta</p></div>
         {quote ? <div className="space-y-3 p-5 text-xs">
           <div aria-live="polite" className="flex justify-between gap-3"><span className="text-muted">Inicial ({Number(quote.downPaymentPercent)}%)</span><b>{currency(quote.downPayment)}</b></div>
           <div className="flex justify-between gap-3"><span className="text-muted">Capital financiado</span><b>{currency(quote.principal)}</b></div>

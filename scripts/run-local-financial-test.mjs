@@ -79,7 +79,7 @@ async function verifyConcurrentActivationAndReversal() {
       readyCount += 1;
       if (readyCount === 2) signalReady();
       await gate;
-      const [result] = await tx.unsafe(statement, parameterLists[index]);
+      const [result] = await tx.unsafe(Array.isArray(statement) ? statement[index] : statement, parameterLists[index]);
       return result.result;
     }));
     await bothReady;
@@ -131,8 +131,21 @@ async function verifyConcurrentActivationAndReversal() {
       throw new Error(`Concurrent activation/reversal left inconsistent records: ${JSON.stringify(state)}`);
     }
     process.stdout.write("Concurrent activation/reversal passed: same-key calls returned one initial payment; different keys produced one activation; each reversal wrote one compensating entry, restored approval, and audited once.\n");
+    const closeSql = "SELECT public.close_cash_day($1::uuid,$2::uuid,$3::uuid,(clock_timestamp() AT TIME ZONE 'America/Santo_Domingo')::date,'down_payment',0,0,0,'Concurrency test: declared zero') AS result";
+    const closeRace = await race([activationSql, closeSql], [[fixture.loanId, randomUUID()], [fixture.tenantId, fixture.branchId, fixture.userId]]);
+    if (closeRace[1].status !== "fulfilled" || (closeRace[0].status === "rejected" && !String(closeRace[0].reason?.message).includes("CASH_ALREADY_CLOSED"))) {
+      throw new Error("Concurrent posting/closing did not serialize as expected.");
+    }
+    const [closingState] = await sql`SELECT c.expected_cash,(SELECT coalesce(sum(e.amount),0) FROM public.ledger_entries e WHERE e.tenant_id=c.tenant_id) AS ledger_net
+      FROM public.cash_closings c WHERE c.tenant_id=${fixture.tenantId}`;
+    if (!closingState || Number(closingState.expected_cash) !== Number(closingState.ledger_net)
+      || Number(closingState.ledger_net) !== (closeRace[0].status === "fulfilled" ? 10 : 0)) {
+      throw new Error("A concurrent payment changed a closed cash snapshot.");
+    }
+    process.stdout.write("Concurrent posting/closing passed: payment was either included in the immutable close or rejected atomically.\n");
   } finally {
     await sql.begin(async (tx) => {
+      await tx`DELETE FROM public.cash_closings WHERE tenant_id=${fixture.tenantId}`;
       await tx`DELETE FROM public.audit_logs WHERE tenant_id=${fixture.tenantId}`;
       await tx`DELETE FROM public.ledger_entries WHERE tenant_id=${fixture.tenantId}`;
       await tx`DELETE FROM public.payment_allocations WHERE tenant_id=${fixture.tenantId}`;
@@ -147,6 +160,7 @@ async function verifyConcurrentActivationAndReversal() {
         AND NOT EXISTS(SELECT 1 FROM public.ledger_entries e WHERE e.account_id=a.id)`;
       await tx`DELETE FROM public.tenant_memberships WHERE tenant_id=${fixture.tenantId}`;
       await tx`DELETE FROM public.branches WHERE tenant_id=${fixture.tenantId}`;
+      await tx`DELETE FROM app_private.document_counters WHERE tenant_id=${fixture.tenantId}`;
       await tx`DELETE FROM public.tenants WHERE id=${fixture.tenantId}`;
       await tx`DELETE FROM auth.users WHERE id=${fixture.userId}`;
     });
@@ -358,6 +372,7 @@ async function cleanupConcurrencyFixture() {
     await tx`DELETE FROM public.financing_settings WHERE tenant_id=${tenantId}`;
     await tx`DELETE FROM public.tenant_memberships WHERE tenant_id=${tenantId}`;
     await tx`DELETE FROM public.branches WHERE tenant_id=${tenantId}`;
+    await tx`DELETE FROM app_private.document_counters WHERE tenant_id=${tenantId}`;
     await tx`DELETE FROM public.tenants WHERE id=${tenantId}`;
     await tx`DELETE FROM auth.users WHERE id=${userId}`;
   });

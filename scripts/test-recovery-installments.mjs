@@ -29,7 +29,7 @@ try {
       for (const termMonths of DEFAULT_FINANCING_SETTINGS.allowedTerms) {
         for (const frequency of ["monthly", "fortnightly"]) {
           let priorSnapshot;
-          for (const downPaymentPercent of ["30.00", "35.00", "40.00", "45.00", "50.00"]) {
+          for (const downPaymentPercent of ["30.00", "35.00", "40.00", "45.00", "50.00", "55.00", "60.00", "65.00", "70.00", "75.00", "80.00"]) {
           for (const recoveryEnabled of [false, true]) {
             await tx.unsafe("RESET ROLE");
             await tx`UPDATE public.financing_settings SET recovery_enabled=${recoveryEnabled} WHERE tenant_id=${tenant}`;
@@ -94,5 +94,5 @@ try {
   } catch (error) { if (error !== rollback) throw error; }
   const [{ remaining }] = await sql`SELECT count(*)::int AS remaining FROM public.tenants WHERE id=${tenant}`;
   assert.equal(remaining, 0);
-  console.log(`${verified} scenarios passed: five down payments, both recovery flags, all terms/frequencies, RPC save/read-back, idempotency, tamper rejection, contract installments, activation and payoff; fixtures rolled back.`);
+  console.log(`${verified} scenarios passed: eleven down payments through 80%, both recovery flags, all terms/frequencies, RPC save/read-back, idempotency, tamper rejection, contract installments, activation and payoff; fixtures rolled back.`);
 } finally { await sql.end({ timeout: 5 }); }

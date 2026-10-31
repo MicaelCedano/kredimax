@@ -16,7 +16,7 @@ describe("balanced recovery capped at 20 percent", () => {
   for (const termMonths of [3,5,6,8,12]) {
     it(`preserves totals, allocations, RD$50 steps and the actual 20% cap for ${termMonths} months`, () => {
       for (const frequency of ["monthly","fortnightly"] as const) {
-        for (const downPaymentPercent of ["30.00","35.00","40.00","45.00","50.00"]) {
+        for (const downPaymentPercent of ["30.00","35.00","40.00","45.00","50.00","55.00","60.00","65.00","70.00","75.00","80.00"]) {
           for (const salePrice of ["0.03","100.00","35000.13","100000.00"]) {
             const scenario = { ...base, termMonths, frequency, downPaymentPercent, salePrice, deviceCost: salePrice };
             const balanced = calculateFinancingQuote({ ...scenario, recoveryEnabled: true });

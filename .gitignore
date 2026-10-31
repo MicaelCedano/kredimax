@@ -11,3 +11,5 @@ coverage/
 .playwright-cli/
 *.kmax.enc
 .local-demo/
+Microsoft/
+supabase/.temp/

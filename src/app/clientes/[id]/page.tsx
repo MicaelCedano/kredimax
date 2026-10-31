@@ -1,4 +1,5 @@
 import { CustomerPhotoEditor } from "@/modules/customers/photo-editor";
+import { responsibleLabel } from "@/modules/customers/portfolio";
 import Link from "next/link";
 import { MoneyInput } from "@/components/forms/money-input";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -88,7 +89,7 @@ export default async function CustomerDetailPage({
     access.supabase
       .from("customers")
       .select(
-        "id, branch_id, full_name, identity_number, phone, address, social_media, home_location, employer, monthly_income, reference_name, reference_phone, reference_identity_number, occupation, employment_type, employment_tenure_months, verified_monthly_income, other_verifiable_income, essential_monthly_expenses, existing_monthly_debts, verified_monthly_debts, dependents_count, housing_type, monthly_rent_expense, work_reference_name, work_reference_phone, income_verification_status, identity_verification_status, employment_verification_status, financial_data_consent, created_at",
+        "id, branch_id, full_name, identity_number, phone, address, social_media, home_location, employer, monthly_income, reference_name, reference_phone, reference_identity_number, occupation, employment_type, employment_tenure_months, verified_monthly_income, other_verifiable_income, essential_monthly_expenses, existing_monthly_debts, verified_monthly_debts, dependents_count, housing_type, monthly_rent_expense, work_reference_name, work_reference_phone, income_verification_status, identity_verification_status, employment_verification_status, financial_data_consent, created_at, created_by, created_by_name",
       )
       .eq("id", id)
       .eq("tenant_id", access.membership.tenant_id)
@@ -260,9 +261,9 @@ export default async function CustomerDetailPage({
 
         <div className="grid items-start gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
           <section className="km-panel overflow-hidden">
-            <div className="h-20 bg-[#0e294b]" />
+            <div className="h-20 border-b border-line bg-accent-soft" />
             <div className="px-6 pb-6">
-              <div className="-mt-8 inline-flex rounded-full border-4 border-white bg-surface">
+              <div className="-mt-8 inline-flex rounded-full border-4 border-surface bg-surface">
                 <CustomerLabel name={customer.full_name} large avatarOnly photoUrl={photo ? `/api/clientes/${customer.id}/foto?v=${encodeURIComponent(photo.updated_at)}` : undefined} />
               </div>
               {canWrite && <CustomerPhotoEditor customerId={customer.id} hasPhoto={Boolean(photo)}/>}
@@ -275,6 +276,11 @@ export default async function CustomerDetailPage({
               </p>
               <dl className="mt-6 space-y-5 border-t border-line pt-5 text-sm">
                 {[
+                  {
+                    icon: UserRound,
+                    label: "Registrado por / Responsable de cobro",
+                    value: responsibleLabel(customer.created_by, customer.created_by_name),
+                  },
                   {
                     icon: Phone,
                     label: "Teléfono",

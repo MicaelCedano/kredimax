@@ -540,6 +540,41 @@
       "when": 1792887500000,
       "tag": "0076_required_payment_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1793036933633,
+      "tag": "0077_customer_portfolios",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1793038285331,
+      "tag": "0078_daily_cash_closings",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1793038938297,
+      "tag": "0079_cash_movement_detail",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1793040395212,
+      "tag": "0080_application_creator_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1793051385271,
+      "tag": "0081_expanded_application_down_payment",
+      "breakpoints": true
     }
   ]
 }
