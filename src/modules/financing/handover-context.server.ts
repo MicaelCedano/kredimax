@@ -6,6 +6,7 @@ export type HandoverQuote = {
   device?: { brand?: string; model?: string; imei?: string; serialNumber?: string; condition?: string };
   fixedInstallment?: string; installmentCount?: number; frequency?: string; totalCustomerPays?: string;
   baseInterest?: string; legalExpenses?: string; proposedAdjustment?: string;
+  annualRatePercent?: string; termMonths?: number;
   firstInstallmentDate?: string; finalDueDate?: string; paymentDistribution?: string;
   schedule?: { sequence: number; dueDate: string; amount: string }[];
 };
