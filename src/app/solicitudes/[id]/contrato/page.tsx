@@ -28,7 +28,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
   return <main id="main-content" className="mx-auto max-w-4xl px-4 py-6 sm:p-8">
     <div className="mb-6 flex flex-wrap gap-3 print:hidden"><Link href={`/solicitudes/${id}/entrega`} className="km-secondary">Volver a preparar entrega</Link><PrintButton/></div>
     <article className="km-document rounded-xl border border-line p-5 text-sm leading-7 sm:p-10">
-      <h1 className="text-center text-xl font-bold">CONTRATO DE FINANCIAMIENTO DE EQUIPO MÓVIL</h1><p className="mt-3 text-center font-bold">BORRADOR PARA REVISIÓN · {contract.contract_number}</p>
+      <h1 className="text-center text-xl font-bold">CONTRATO DE FINANCIAMIENTO DE EQUIPO</h1><p className="mt-3 text-center font-bold">BORRADOR PARA REVISIÓN · {contract.contract_number}</p>
       <p className="mt-5 font-semibold">Este borrador adapta el modelo de YACELL TECH SRL a los datos aprobados. Completa los campos pendientes y revisa las cláusulas y la identidad de la compañía antes de usarlo. No acredita firma, pago ni entrega.</p>
       <p className="mt-4">Entre: YACELL TECH SRL, sociedad comercial organizada conforme a las leyes de la República Dominicana, con domicilio social en Calle Duarte, esquina Dr. Teófilo Ferry #54, La Romana, República Dominicana, teléfono [POR COMPLETAR], correo electrónico [POR COMPLETAR], debidamente representada por [POR COMPLETAR], YASSER ZOROB JIMÉNEZ, en lo adelante, «LA COMPAÑÍA»; y la persona identificada a continuación, en lo adelante, «EL CLIENTE». Ambas serán denominadas conjuntamente «LAS PARTES».</p>
       <p className="mt-2">Empresa de la solicitud: <b>{company}</b>. Verificar que corresponda a la compañía del modelo.</p>
