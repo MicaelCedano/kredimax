@@ -8,6 +8,7 @@ import { formatDop } from "@/lib/format-money";
 import { getTenantAccess } from "@/lib/security/tenant-access";
 
 import { portfolioFilter, responsibleLabel, type PortfolioSeller } from "@/modules/customers/portfolio";
+import { CollectionWhatsapp } from "@/modules/customers/collection-whatsapp";
 
 const labels: Record<string, string> = { "": "Todos los clientes", balance: "Con saldo pendiente", current: "Al día", due: "Pendiente hoy", overdue: "Vencido", settled: "Saldado", none: "Sin crédito activo" };
 const tones: Record<string, string> = { current: "paid", due: "partial", overdue: "overdue", settled: "paid_off", none: "draft" };
@@ -59,6 +60,7 @@ export async function CustomerCollectionsPanel({ access, query }: { access: Acce
             <p className="text-xs text-secondary">Responsable de cobro: {responsibleLabel(row.sellerId, row.sellerName)}</p>
             <dl className="grid grid-cols-2 gap-3 rounded-lg bg-subtle p-3 text-xs"><div><dt>Saldo pendiente</dt><dd className="mt-1 font-bold">{formatDop(row.balance)}</dd></div><div><dt>Saldo vencido</dt><dd className="mt-1 font-bold text-danger">{formatDop(row.overdueBalance)}</dd></div><div><dt>Cuotas pendientes</dt><dd>{row.pendingInstallments} · {row.overdueInstallments} vencidas</dd></div><div><dt>Vencimiento pendiente</dt><dd>{row.nextDueDate?.split("-").reverse().join("/") ?? "—"}</dd></div></dl>
             <Link href={`/clientes/${row.id}`} className="text-xs font-semibold text-accent">Ver ficha del cliente →</Link>
+            {row.pendingInstallments > 0 && <CollectionWhatsapp name={row.name} phone={row.phone} status={row.status} balance={row.balance} overdueBalance={row.overdueBalance} todayBalance={row.todayBalance} nextDueDate={row.nextDueDate}/>}
           </article>)}</div>
           <div className="hidden overflow-x-auto md:block"><table className="km-table min-w-[840px]"><thead><tr><th>Cliente / contacto</th><th>Responsable de cobro</th><th>Estado</th><th>Cuotas pendientes</th><th>Saldo pendiente</th><th>Saldo vencido</th><th>Vencimiento pendiente</th><th>Ficha</th></tr></thead><tbody>{result.rows.map((row) => <tr key={row.id}>
             <td><CustomerLabel name={row.name} photoUrl={row.photoUpdatedAt ? `/api/clientes/${row.id}/foto?v=${encodeURIComponent(row.photoUpdatedAt)}` : undefined}/><p className="ml-12 mt-1 text-[11px] text-muted">{row.identity ?? "Sin cédula"} · {row.phone ?? "Sin teléfono"}<br/>{row.branch ?? "Sin sucursal"}</p></td>
@@ -66,7 +68,7 @@ export async function CustomerCollectionsPanel({ access, query }: { access: Acce
             <td><StatusBadge status={tones[row.status]} label={labels[row.status]}/>{row.overdueDays > 0 && <span className="mt-1 block text-[11px] text-danger">{row.overdueDays} días de atraso</span>}</td>
             <td><b>{row.pendingInstallments}</b><span className="block text-[11px] text-muted">{row.overdueInstallments} vencidas · {row.activeLoans} créditos activos</span></td>
             <td className="km-amount font-semibold">{formatDop(row.balance)}</td><td className="km-amount text-danger">{formatDop(row.overdueBalance)}</td><td className="text-xs">{row.nextDueDate?.split("-").reverse().join("/") ?? "—"}</td>
-            <td><Link href={`/clientes/${row.id}`} className="text-xs font-semibold text-accent">Ver ficha →</Link></td>
+            <td><Link href={`/clientes/${row.id}`} className="text-xs font-semibold text-accent">Ver ficha →</Link>{row.pendingInstallments > 0 && <CollectionWhatsapp name={row.name} phone={row.phone} status={row.status} balance={row.balance} overdueBalance={row.overdueBalance} todayBalance={row.todayBalance} nextDueDate={row.nextDueDate}/>}</td>
           </tr>)}</tbody></table></div>
           <nav aria-label="Paginación de clientes de cobros" className="flex items-center justify-between gap-2 border-t border-line pt-3 text-xs"><Link href={href(status, Math.max(1, page - 1))} aria-disabled={page <= 1} className={page <= 1 ? "pointer-events-none text-muted" : "font-semibold text-accent"}>Anterior</Link><span>Página {page} de {Math.max(1, Math.ceil(result.count / 25))}</span><Link href={href(status, page + 1)} aria-disabled={page * 25 >= result.count} className={page * 25 >= result.count ? "pointer-events-none text-muted" : "font-semibold text-accent"}>Siguiente</Link></nav>
         </> : <EmptyState title="No hay clientes con estos filtros" description="Prueba otro estado, nombre, sucursal o rango de fechas."/>}
