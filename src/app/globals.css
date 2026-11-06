@@ -101,6 +101,8 @@ textarea.km-input { resize: vertical; }
 .km-stat-card .km-stat-label { font-size: 12px; font-weight: 500; line-height: 1.5; }
 .km-stat-card .km-stat-value { margin-top: 8px; white-space: nowrap; font-size: clamp(14px, var(--km-stat-value-scale, 10cqi), 30px); font-weight: 600; line-height: 1.2; }
 .km-sidebar-brand { display: flex; min-height: 80px; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 6px; padding: 16px 18px; }
+.km-brand-logo { display: inline-block; flex-shrink: 0; width: 160px; aspect-ratio: 367 / 79; border-radius: 5px; background: #062657 url('/kredimax-propuestas.jpg') 50.25% 15% / 348.8% auto no-repeat; }
+.km-sidebar-brand .km-brand-icon { display: none; }
 .km-sidebar-toggle { width: 30px; height: 44px; border-radius: 9px; }
 .km-quick-action { display: none; }
 .km-bottom-nav { display: none; }
@@ -130,6 +132,8 @@ textarea.km-input { resize: vertical; }
   :root[data-sidebar="collapsed"] .km-sidebar-footer { display: none; }
   :root[data-sidebar="collapsed"] .km-sidebar .km-nav-link { justify-content: center; padding-inline: 0; }
   :root[data-sidebar="collapsed"] .km-sidebar-brand { flex-direction: column; padding-inline: 12px; gap: 4px; }
+  :root[data-sidebar="collapsed"] .km-sidebar-brand .km-brand-logo { display: none; }
+  :root[data-sidebar="collapsed"] .km-sidebar-brand .km-brand-icon { display: grid; }
   :root[data-sidebar="collapsed"] .km-sidebar-toggle { width: 44px; }
 }
 @media (min-width: 1440px) { .km-stat-card { flex-direction: row; align-items: center; gap: 15px; } }

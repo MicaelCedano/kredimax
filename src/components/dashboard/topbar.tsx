@@ -8,6 +8,7 @@ import { MobileNavigation } from "@/components/dashboard/mobile-navigation";
 import { CompanyContext } from "@/components/dashboard/company-context";
 import { SearchBox } from "@/components/dashboard/search-box";
 import { AppearanceControl } from "@/components/ui/appearance-control";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import { loadAllPages } from "@/lib/pagination/load-all-pages";
 import { branchIdsForMemberships } from "@/lib/auth/session-branches";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -150,7 +151,7 @@ export function Topbar() {
 
   return <>
     <header className="km-topbar sticky top-0 z-20 flex h-[72px] items-center justify-between gap-3 px-3 sm:px-7 lg:ml-[244px]">
-      <div className="flex min-w-0 items-center gap-2 sm:gap-3"><MobileNavigation tenantChoices={tenantChoices} selectedTenant={selectedTenant} selectedContext={{ organization, branch, role }} onTenantChange={selectTenant}/><Link href="/" prefetch={false} aria-label="KrediMax inicio" className="text-[20px] font-bold tracking-[-.8px] text-ink md:hidden">Kredi<span className="text-accent">Max</span></Link><SearchBox/></div>
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3"><MobileNavigation tenantChoices={tenantChoices} selectedTenant={selectedTenant} selectedContext={{ organization, branch, role }} onTenantChange={selectTenant}/><Link href="/" prefetch={false} aria-label="KrediMax inicio" className="md:hidden"><BrandLogo className="!w-[110px]"/></Link><SearchBox/></div>
       <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-3">
         <CompanyContext tenantChoices={tenantChoices} selectedTenant={selectedTenant} organization={organization} branch={branch} onTenantChange={selectTenant}/>
         {signOutError && <span role="alert" className="max-w-32 text-[10px] leading-4 text-danger sm:max-w-48 sm:text-xs">{signOutError}</span>}
