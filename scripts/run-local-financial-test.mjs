@@ -386,7 +386,7 @@ async function cleanupConcurrencyFixture() {
 }
 
 try {
-  for (const testName of (process.argv.includes("--concurrency-only") ? [] : ["financial_defaults_hardening.sql", "financial_integrity.sql", "rls_tenant_isolation.sql", "branch_isolation.sql", "role_financial_permissions.sql", "admin_mfa.sql"])) {
+  for (const testName of (process.argv.includes("--concurrency-only") ? [] : ["financial_defaults_hardening.sql", "financial_integrity.sql", "rls_tenant_isolation.sql", "branch_isolation.sql", "role_financial_permissions.sql", "admin_mfa.sql", "manual_mdm_queue.sql"])) {
     const source = readFileSync(new URL(`../supabase/tests/${testName}`, import.meta.url), "utf8");
     await sql.unsafe(source).simple();
     process.stdout.write(`${testName} passed; test transaction rolled back.\n`);

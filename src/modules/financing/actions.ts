@@ -567,6 +567,7 @@ export async function reviewCreditApplication(_previousState: ReviewCreditApplic
   });
   if (error) return { state: error.message.includes("DEVICE_NOT_IN_INVENTORY") ? "device-not-in-inventory" : error.message.includes("ADDITIONAL_CHARGE") ? "additional-charge-approval-required" : "review-error" };
   revalidatePath("/solicitudes");
+  if (parsed.data.decision === "approved") revalidatePath("/mdm");
   revalidatePath(`/solicitudes/${parsed.data.applicationId}`);
   revalidatePath("/dispositivos");
   revalidatePath("/dispositivos/[id]", "page");
@@ -650,6 +651,7 @@ export async function activateApprovedLoan(_previous: LoanActivationState, formD
 
   revalidatePath("/solicitudes");
   revalidatePath("/cobros");
+  revalidatePath("/mdm");
   revalidatePath("/recibos");
   revalidatePath("/cajas");
   revalidatePath("/dispositivos");

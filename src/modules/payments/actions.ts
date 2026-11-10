@@ -77,6 +77,7 @@ export async function recordLoanPayment(_previousState: PaymentActionState, form
   }
 
   revalidatePath("/cobros");
+  revalidatePath("/mdm");
   revalidatePath("/recibos");
   revalidatePath("/cajas");
   revalidatePath("/reportes");
@@ -126,6 +127,6 @@ export async function reverseLoanPayment(_previousState: PaymentActionState, for
     // Keep payment reversal resilient if optional evaluation refresh fails.
   }
 
-  for (const path of ["/cobros", "/recibos", "/cajas", "/reportes", "/financiamientos", "/auditoria"]) revalidatePath(path);
+  for (const path of ["/cobros", "/recibos", "/cajas", "/reportes", "/financiamientos", "/auditoria", "/mdm"]) revalidatePath(path);
   redirect("/cobros?estado=revertido");
 }

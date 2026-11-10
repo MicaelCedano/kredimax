@@ -4,7 +4,7 @@ import {
   primaryKey, text, timestamp, uniqueIndex, uuid, varchar,
 } from "drizzle-orm/pg-core";
 
-export const memberRole = pgEnum("member_role", ["platform_admin", "tenant_admin", "branch_manager", "sales", "cashier", "collections", "auditor"]);
+export const memberRole = pgEnum("member_role", ["platform_admin", "tenant_admin", "branch_manager", "sales", "cashier", "collections", "auditor", "mdm_operator"]);
 export const financingStatus = pgEnum("financing_status", ["draft", "pending", "approved", "active", "paid_off", "rejected", "cancelled"]);
 export const installmentStatus = pgEnum("installment_status", ["pending", "partial", "paid", "overdue", "waived"]);
 
