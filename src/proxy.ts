@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isPublicAuthRoute } from "@/lib/auth/public-auth-routes";
+import { isPublicRoute } from "@/lib/auth/public-auth-routes";
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,20 +20,21 @@ export async function proxy(request: NextRequest) {
   });
   const pathname = request.nextUrl.pathname;
   const isLogin = pathname === "/login";
+  const isPublic = isPublicRoute(pathname);
   const hasSupabaseSessionCookie = request.cookies.getAll().some(({ name }) =>
     /^sb-.+-auth-token(?:\.\d+)?$/i.test(name),
   );
 
-  // Public auth pages must render without waiting on Supabase. Proxy is a fast
+  // Public pages must render without waiting on Supabase. Proxy is a fast
   // routing layer; only check claims when a session cookie may need validation.
-  if (isPublicAuthRoute(pathname) && !hasSupabaseSessionCookie) {
+  if (isPublic && !hasSupabaseSessionCookie) {
     response.headers.set("Cache-Control", "private, no-store");
     return response;
   }
 
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
-  if (!claims?.sub && !isPublicAuthRoute(pathname)) {
+  if (!claims?.sub && !isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     const redirect = NextResponse.redirect(loginUrl);
