@@ -12,11 +12,11 @@ vi.mock("@/lib/financing/application-drive.server", () => ({
 import { createCreditApplication, reviewCreditApplication, saveFinancingSettings } from "@/modules/financing/actions";
 import { businessDocumentRequirements } from "@/modules/financing/application-income";
 
-function request(imei: string) {
+function request(imei: string, incomeSource = "employee") {
   const data = new FormData();
   for (const [name,value] of Object.entries({
     submissionKey:"81000000-0000-4000-8000-000000000001",customerMode:"new",customerFullName:"Cliente de prueba",
-    incomeSource:"employee",
+    customerAddress:"Calle de prueba 1",incomeSource,employer:incomeSource === "business_owner" ? "  Negocio de prueba  " : "",
     brand:"Apple",model:"iPhone 13",imei,condition:"new",salePrice:"20000.00",termMonths:"5",frequency:"fortnightly",
     firstInstallmentDate:"2026-10-21",
   })) data.set(name,value);
@@ -60,15 +60,29 @@ describe("Application validation before persistence", () => {
     expect(result?.fieldErrors?.referenceIdentityNumber).toBeUndefined();
   });
   it.each(["", "independent"])("requires a recognized income source for a new customer (%j)", async (incomeSource) => {
-    const data = request("490154203237518");
-    data.set("incomeSource", incomeSource);
+    const data = request("490154203237518", incomeSource);
     const result = await createCreditApplication(null, data);
     expect(result?.fieldErrors?.incomeSource).toBeDefined();
     expect(rpc).not.toHaveBeenCalled();
   });
+  it.each(["employee", "business_owner"])("requires a nonblank address when registering a new %s", async (incomeSource) => {
+    const data = request("490154203237518", incomeSource);
+    data.set("customerAddress", "  ");
+    const result = await createCreditApplication(null, data);
+    expect(result?.fieldErrors?.customerAddress).toBe("Escribe la dirección del cliente.");
+    expect(from).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("requires a nonblank name for the business before reading its attachments", async () => {
+    const data = request("490154203237518", "business_owner");
+    data.set("employer", "  ");
+    const result = await createCreditApplication(null, data);
+    expect(result?.fieldErrors?.employer).toBe("Escribe el nombre del negocio.");
+    expect(uploadDocuments).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it.each(businessDocumentRequirements)("requires $label for a new business owner", async ({ field: missingField }) => {
-    const data = request("490154203237518");
-    data.set("incomeSource", "business_owner");
+    const data = request("490154203237518", "business_owner");
     for (const { field } of businessDocumentRequirements) {
       if (field !== missingField) data.set(field, pdf());
     }
@@ -78,8 +92,7 @@ describe("Application validation before persistence", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
   it("rejects a non-PDF disguised as a PDF before sending any file to Drive", async () => {
-    const data = request("490154203237518");
-    data.set("incomeSource", "business_owner");
+    const data = request("490154203237518", "business_owner");
     for (const { field } of businessDocumentRequirements) data.set(field, pdf());
     data.set("businessFinancialStatement", new File(["not a PDF"], "documento.pdf", { type: "application/pdf" }));
     const result = await createCreditApplication(null, data);
@@ -132,11 +145,10 @@ describe("Application validation before persistence", () => {
       } }),
     }));
     rpc.mockResolvedValue({ data: null, error: { code: "23505", message: "Disposable save stub" } });
-    const data = request("490154203237518");
+    const data = request("490154203237518", incomeSource);
     data.set("branchId", branchId);
     data.set("frequency", frequency);
     data.set("firstInstallmentDate", "2099-01-01");
-    data.set("incomeSource", incomeSource);
     const documents = businessDocumentRequirements.map(({ field }, index) => ({ field, driveFileId: `test-drive-file-${index}` }));
     const discardUnlinked = vi.fn();
     if (incomeSource === "business_owner") {
@@ -147,6 +159,7 @@ describe("Application validation before persistence", () => {
     await createCreditApplication(null, data);
     const applicant = rpc.mock.lastCall?.[1].p_quote_snapshot.applicant;
     expect(applicant?.incomeSource).toBe(incomeSource);
+    expect(applicant?.employer).toBe(incomeSource === "business_owner" ? "Negocio de prueba" : null);
     expect(applicant?.businessDocumentFiles).toEqual(incomeSource === "business_owner" ? documents : undefined);
     if (incomeSource === "business_owner") {
       expect(uploadDocuments).toHaveBeenCalledWith(

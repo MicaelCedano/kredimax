@@ -28,7 +28,7 @@ const newCustomerSchema = z.object({
   fullName: z.string().trim().transform(uppercaseCustomerName).pipe(z.string().min(2).max(200)),
   identityNumber: z.string().trim().transform(formatIdentityInput).pipe(optionalCustomerText(40)),
   phone: z.string().trim().transform(formatPhoneInput).pipe(optionalCustomerText(40)),
-  address: optionalCustomerText(500),
+  address: z.string().trim().min(1, "Escribe la dirección del cliente.").max(500, "La dirección debe tener 500 caracteres o menos."),
 });
 const applicationSchema = z.object({
   submissionKey: uuidSchema.transform((key) => key.toLowerCase()),
@@ -301,13 +301,6 @@ export async function createCreditApplication(_previousState: CreditApplicationA
   if (incomeSource && !incomeSource.success) {
     return { state: "invalid-form", fieldErrors: { incomeSource: "Selecciona Empleado o Negocio propio." } };
   }
-  let businessDocuments: BusinessApplicationDocument[] = [];
-  if (incomeSource?.data === "business_owner") {
-    const result = await readBusinessApplicationDocuments(formData);
-    if (result.fieldErrors) return { state: "business-documents-invalid", fieldErrors: result.fieldErrors };
-    businessDocuments = result.documents;
-  }
-
   let customer: { id: string | null; branch_id: string | null; full_name: string; identity_number: string | null; phone: string | null; address: string | null } | null = null;
   if (parsed.data.customerMode === "existing") {
     if (!uuidSchema.safeParse(parsed.data.customerId).success) return { state: "invalid-form", fieldErrors: { customerId: "Busca y selecciona el expediente del cliente." } };
@@ -324,6 +317,14 @@ export async function createCreditApplication(_previousState: CreditApplicationA
     });
     if (!parsedCustomer.success) return { state: "invalid-customer", fieldErrors: applicationIssueFields(parsedCustomer.error.issues.map(issue => ({ ...issue, path: [new Map([["fullName", "customerFullName"], ["identityNumber", "customerIdentityNumber"], ["phone", "customerPhone"], ["address", "customerAddress"]]).get(String(issue.path[0])) ?? issue.path[0]] }))) };
     customer = { id: null, branch_id: null, full_name: parsedCustomer.data.fullName, identity_number: parsedCustomer.data.identityNumber, phone: parsedCustomer.data.phone, address: parsedCustomer.data.address };
+  }
+
+  let businessDocuments: BusinessApplicationDocument[] = [];
+  if (incomeSource?.data === "business_owner") {
+    if (!parsed.data.employer) return { state: "invalid-customer", fieldErrors: { employer: "Escribe el nombre del negocio." } };
+    const result = await readBusinessApplicationDocuments(formData);
+    if (result.fieldErrors) return { state: "business-documents-invalid", fieldErrors: result.fieldErrors };
+    businessDocuments = result.documents;
   }
 
   const canChooseAnyBranch = access.membership.role === "tenant_admin";

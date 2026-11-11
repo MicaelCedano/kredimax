@@ -114,6 +114,7 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("new");
   const [incomeSource, setIncomeSource] = useState("");
   const selectedIncomeSource = customerMode === "new" ? applicationIncomeSources.find(({ value }) => value === incomeSource) : undefined;
+  const businessOwner = selectedIncomeSource?.value === "business_owner";
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerMatches, setCustomerMatches] = useState<CustomerOption[]>([]);
   const [customerSearchState, setCustomerSearchState] = useState<"idle" | "searching" | "ready" | "error">("idle");
@@ -414,7 +415,7 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
             <Field label="Cédula o documento"><input name="customerIdentityNumber" autoComplete="off" maxLength={40} value={customerIdentityNumber} onChange={(event) => setCustomerIdentityNumber(formatInputElement(event.currentTarget, formatIdentityInput))} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="000-0000000-0"/></Field>
             {(customerLookup !== "idle" || (customerMode === "new" && customerIdentityNumber.trim().length >= 6)) && <p aria-live="polite" className="text-xs leading-5 text-secondary sm:col-span-2">{customerLookup === "idle" ? "Buscando cliente por cédula…" : customerLookup === "not-found" ? "No existe un cliente con esta cédula; se registrará uno nuevo." : customerLookup === "ambiguous" ? "Hay más de un expediente con esta cédula. Selecciona el cliente existente para evitar duplicarlo." : customerLookup === "unavailable" ? "No se pudo consultar la cédula ahora. Puedes continuar y el sistema verificará duplicados al guardar." : "Cliente encontrado y seleccionado."}</p>}
             <Field label="Teléfono del cliente"><input name="customerPhone" type="tel" autoComplete="tel" maxLength={40} onChange={(event) => formatInputElement(event.currentTarget, formatPhoneInput)} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="809-000-0000"/></Field>
-            <Field label="Dirección"><input name="customerAddress" autoComplete="street-address" maxLength={500} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="Opcional"/></Field>
+            <Field label="Dirección *" error={serverFieldErrors.customerAddress}><input required name="customerAddress" autoComplete="street-address" pattern=".*\S.*" maxLength={500} aria-invalid={Boolean(serverFieldErrors.customerAddress)} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="Calle, número y sector"/></Field>
           </Fragment>}
           <Field label="Sucursal de origen *"><select required name="branchSelector" value={selectedCustomer?.branch_id ?? branchId} onChange={(event) => setBranchId(event.target.value)} disabled={customerMode === "existing" && Boolean(selectedCustomer?.branch_id)} className="km-input mt-1.5 w-full rounded-lg border border-field-border bg-surface px-3 py-2.5 text-sm font-normal disabled:bg-subtle"><option value="" disabled>Selecciona una sucursal</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></Field>
         </div>
@@ -429,9 +430,9 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
               </Field>
             </div>
           )}
-          <Field label={selectedIncomeSource?.value === "business_owner" ? "Nombre del negocio" : "Empleo / empresa"}><input name="employer" maxLength={160} value={employerInput} onChange={(e) => setEmployerInput(e.target.value)} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="Opcional"/></Field>
+          <Field label={businessOwner ? "Nombre del negocio *" : "Empleo / empresa"} error={serverFieldErrors.employer}><input name="employer" required={businessOwner} pattern={businessOwner ? ".*\\S.*" : undefined} maxLength={160} aria-invalid={Boolean(serverFieldErrors.employer)} value={employerInput} onChange={(event) => setEmployerInput(event.target.value)} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder={businessOwner ? undefined : "Opcional"}/></Field>
           <Field label="Ingreso mensual (RD$)"><MoneyInput name="monthlyIncome" inputMode="decimal" maxLength={18} placeholder="0.00" value={monthlyIncomeInput} onChange={(event) => setMonthlyIncomeInput(formatInputElement(event.currentTarget, formatMoneyInput))} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal"/></Field>
-          {selectedIncomeSource?.value === "business_owner" && (
+          {businessOwner && (
             <BusinessDocumentInputs driveReady={applicationDriveReady} fieldErrors={serverFieldErrors}/>
           )}
           <Field label="Parentesco de referencia"><select name="referenceRelationship" value={referenceRelationship} onChange={(event) => setReferenceRelationship(event.target.value)} className="km-input mt-1.5 w-full rounded-lg border border-field-border bg-surface px-3 py-2.5 text-sm font-normal"><option value="">Selecciona un parentesco</option>{REFERENCE_RELATIONSHIPS.map((relationship) => <option key={relationship} value={relationship}>{relationship}</option>)}</select></Field>

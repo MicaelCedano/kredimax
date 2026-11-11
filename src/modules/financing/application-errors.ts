@@ -29,7 +29,7 @@ export function applicationIssueFields(issues: readonly { path: readonly Propert
   for (const issue of issues) {
     const name = String(issue.path[0] ?? "");
     if (!applicationFields[name] || fields[name]) continue;
-    fields[name] = name === "imei" || name === "referenceIdentityNumber" ? issue.message : `Revisa ${applicationFields[name].label.toLocaleLowerCase("es-DO")}; el valor está incompleto o supera el formato permitido.`;
+    fields[name] = name === "imei" || name === "referenceIdentityNumber" || name === "customerAddress" ? issue.message : `Revisa ${applicationFields[name].label.toLocaleLowerCase("es-DO")}; el valor está incompleto o supera el formato permitido.`;
   }
   return fields;
 }
