@@ -43,14 +43,14 @@ export function BusinessDocumentInputs({ driveReady, fieldErrors }: { driveReady
   return (
     <fieldset ref={fieldset} className="min-w-0 space-y-3 rounded-lg border border-line bg-subtle p-4 sm:col-span-2" aria-describedby="business-documents-instructions">
       <legend className="px-1 text-sm font-bold text-ink">Documentos para negocio propio</legend>
-      <p id="business-documents-instructions" className="text-xs text-muted">Adjunta un PDF o una imagen JPG, PNG o WebP por requisito. Los tres archivos juntos deben pesar 4 MB o menos.</p>
+      <p id="business-documents-instructions" className="text-xs text-muted">Los tres documentos son obligatorios. Adjunta un PDF o una imagen JPG, PNG o WebP por requisito, con un máximo de 4 MB en total.</p>
       {!driveReady && <p role="status" className="rounded-lg border border-warning-line bg-warning-soft p-2 text-xs text-warning">{businessDocumentsUnavailableMessage}</p>}
       {businessDocumentRequirements.map(({ field, label }) => {
         const error = errors[field] ?? fieldErrors[field];
         const inputId = `application-${field}`;
         return (
           <div key={field} className="min-w-0 space-y-1">
-            <label htmlFor={inputId} className="block text-sm font-semibold text-secondary">{label}</label>
+            <label htmlFor={inputId} className="block text-sm font-semibold text-secondary">{label} <span aria-hidden="true">*</span></label>
             <input
               id={inputId}
               type="file"
