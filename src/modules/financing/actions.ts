@@ -12,6 +12,9 @@ import { firstPaymentDate } from "@/modules/financing/schedule-dates";
 import { isoDateInTimeZone } from "@/lib/business-date";
 import { sanitizeSearchTerm } from "@/lib/validation/search-term";
 import { applicationIssueFields } from "@/modules/financing/application-errors";
+import { applicationIncomeSources, businessDocumentRequirements } from "@/modules/financing/application-income";
+import { applicationDriveFileId, readBusinessApplicationDocuments, type BusinessApplicationDocument } from "@/modules/financing/application-documents";
+import { isApplicationDriveConfigured, uploadBusinessApplicationDocuments } from "@/lib/financing/application-drive.server";
 import { evaluateCustomerCredit, riskLabelForLevel, type CreditRiskLevel, type VerificationStatus } from "@/modules/credit-evaluation/engine";
 import { computeAndPersistCustomerEvaluation, loadCustomerInternalHistory, loadTenantCreditPolicy } from "@/modules/credit-evaluation/service";
 import { formatIdentityInput, formatPhoneInput, normalizeMoneyInput, REFERENCE_RELATIONSHIPS, uppercaseCustomerName } from "@/modules/financing/input-format";
@@ -19,6 +22,7 @@ import { loadHandoverContext } from "@/modules/financing/handover-context.server
 import { isProvisionalActReference, missingHandoverFields } from "@/modules/financing/handover-requirements";
 
 const uuidSchema = z.string().uuid();
+const incomeSourceSchema = z.enum(applicationIncomeSources.map(({ value }) => value));
 const optionalCustomerText = (max: number) => z.string().trim().max(max).transform((value) => value || null);
 const newCustomerSchema = z.object({
   fullName: z.string().trim().transform(uppercaseCustomerName).pipe(z.string().min(2).max(200)),
@@ -27,7 +31,7 @@ const newCustomerSchema = z.object({
   address: optionalCustomerText(500),
 });
 const applicationSchema = z.object({
-  submissionKey: uuidSchema,
+  submissionKey: uuidSchema.transform((key) => key.toLowerCase()),
   customerMode: z.enum(["existing", "new"]),
   customerId: z.string(),
   customerFullName: z.string(),
@@ -293,6 +297,17 @@ export async function createCreditApplication(_previousState: CreditApplicationA
   ].map((key) => [key, value(formData, key)])));
   if (!parsed.success) return { state: "invalid-form", fieldErrors: applicationIssueFields(parsed.error.issues) };
 
+  const incomeSource = parsed.data.customerMode === "new" ? incomeSourceSchema.safeParse(value(formData, "incomeSource")) : null;
+  if (incomeSource && !incomeSource.success) {
+    return { state: "invalid-form", fieldErrors: { incomeSource: "Selecciona Empleado o Negocio propio." } };
+  }
+  let businessDocuments: BusinessApplicationDocument[] = [];
+  if (incomeSource?.data === "business_owner") {
+    const result = await readBusinessApplicationDocuments(formData);
+    if (result.fieldErrors) return { state: "business-documents-invalid", fieldErrors: result.fieldErrors };
+    businessDocuments = result.documents;
+  }
+
   let customer: { id: string | null; branch_id: string | null; full_name: string; identity_number: string | null; phone: string | null; address: string | null } | null = null;
   if (parsed.data.customerMode === "existing") {
     if (!uuidSchema.safeParse(parsed.data.customerId).success) return { state: "invalid-form", fieldErrors: { customerId: "Busca y selecciona el expediente del cliente." } };
@@ -375,6 +390,7 @@ export async function createCreditApplication(_previousState: CreditApplicationA
       address: customer.address,
       employer: parsed.data.employer || null,
       monthlyIncome: income,
+      ...(incomeSource?.data ? { incomeSource: incomeSource.data } : {}),
       reference: hasReference ? { name: parsed.data.referenceName, phone: parsed.data.referencePhone, identityNumber: parsed.data.referenceIdentityNumber || null, relationship: parsed.data.referenceRelationship || null, consentRecorded: true } : null,
     },
     device: {
@@ -400,6 +416,21 @@ export async function createCreditApplication(_previousState: CreditApplicationA
       return { state: customerAccess.reason === "unavailable" ? "unavailable" : "forbidden" };
     }
     if (customerAccess.membership.tenant_id !== access.membership.tenant_id || customerAccess.membership.branch_id !== access.membership.branch_id) return { state: "forbidden" };
+    let upload: Awaited<ReturnType<typeof uploadBusinessApplicationDocuments>> | undefined;
+    if (businessDocuments.length) {
+      const tenantId = access.membership.tenant_id;
+      const submissionKey = parsed.data.submissionKey;
+      const prior = await access.supabase.from("credit_applications").select("id")
+        .eq("tenant_id", tenantId).eq("created_by", access.userId).eq("submission_key", submissionKey).maybeSingle();
+      if (prior.error) return { state: "unavailable" };
+      if (prior.data) redirect("/solicitudes?estado=creada");
+      if (!isApplicationDriveConfigured(tenantId)) return { state: "application-drive-not-configured" };
+      try {
+        upload = await uploadBusinessApplicationDocuments(businessDocuments, { tenantId, submissionKey, actorId: access.userId });
+      } catch {
+        return { state: "application-drive-upload-failed" };
+      }
+    }
     const created = await access.supabase.rpc("create_customer_and_credit_application", {
       p_tenant_id: access.membership.tenant_id,
       p_branch_id: branchId,
@@ -409,11 +440,26 @@ export async function createCreditApplication(_previousState: CreditApplicationA
       p_customer_address: customer.address,
       p_device_id: null,
       p_requested_amount: quote.principal,
-      p_quote_snapshot: quoteSnapshot,
+      p_quote_snapshot: upload ? {
+        ...quoteSnapshot,
+        applicant: { ...quoteSnapshot.applicant, businessDocumentFiles: upload.documents },
+      } : quoteSnapshot,
       p_submission_key: parsed.data.submissionKey,
     });
     applicationId = created.data;
     saveError = created.error;
+    if (upload) {
+      if (saveError?.code && /^(?:22|23|40|42|P0)[A-Z0-9]{3}$/.test(saveError.code)) {
+        await upload.discardUnlinked();
+      } else if (applicationId && !saveError) {
+        // A simultaneous retry may have returned a previously saved application.
+        const { data: persisted } = await access.supabase.from("credit_applications").select("quote_snapshot")
+          .eq("tenant_id", access.membership.tenant_id).eq("id", applicationId).maybeSingle();
+        if (persisted) {
+          await upload.discardUnlinked(businessDocumentRequirements.map(({ field }) => applicationDriveFileId(persisted.quote_snapshot, field)));
+        }
+      }
+    }
   } else {
     const created = await access.supabase.rpc("create_credit_application", {
       p_tenant_id: access.membership.tenant_id,

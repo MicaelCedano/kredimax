@@ -7,6 +7,8 @@ import { PreservedActionForm } from "@/components/forms/preserved-action-form";
 import { Topbar } from "@/components/dashboard/topbar";
 import { getTenantAccess } from "@/lib/security/tenant-access";
 import { reviewCreditApplication } from "@/modules/financing/actions";
+import { applicationIncomeSources, businessDocumentRequirements } from "@/modules/financing/application-income";
+import { applicationDriveFileId } from "@/modules/financing/application-documents";
 import { PendingHandover } from "@/modules/financing/pending-handover";
 import { hasVariableInstallments, InstallmentSummary } from "@/modules/financing/installment-summary";
 import { RecoverySummary } from "@/modules/financing/recovery-summary";
@@ -43,6 +45,11 @@ export default async function CreditApplicationDetailPage({ params, searchParams
     .eq("id", id).eq("tenant_id", access.membership.tenant_id).maybeSingle();
   if (error) return <div className="min-h-screen bg-canvas"><Sidebar/><Topbar/><main id="main-content" tabIndex={-1} className="km-main px-5 py-10 lg:ml-[244px]"><p role="alert" className="rounded-xl border border-warning-line bg-warning-soft p-4 text-sm text-warning">No se pudo cargar la solicitud desde la base local.</p></main></div>;
   if (!application) notFound();
+  const applicationApplicant = (application.quote_snapshot as {
+    applicant?: { incomeSource?: string; businessDocumentsReceived?: string[] };
+  } | null)?.applicant;
+  const incomeSource = applicationIncomeSources.find(({ value }) => value === applicationApplicant?.incomeSource);
+  const receivedBusinessDocuments = Array.isArray(applicationApplicant?.businessDocumentsReceived) ? applicationApplicant.businessDocumentsReceived : [];
   const [{ data: events }, { data: customerProfile }, internalHistory, creditPolicy] = await Promise.all([
     access.supabase.from("credit_application_events").select("id,event_type,from_status,to_status,notes,metadata,created_at,actor_id").eq("application_id", id).eq("tenant_id", access.membership.tenant_id).order("created_at", { ascending: true }),
     access.supabase.from("customers").select("id,full_name,identity_number,phone,address,social_media,home_location,employer,occupation,employment_type,employment_tenure_months,monthly_income,verified_monthly_income,other_verifiable_income,essential_monthly_expenses,existing_monthly_debts,verified_monthly_debts,dependents_count,housing_type,monthly_rent_expense,reference_name,reference_phone,reference_relationship,reference_identity_number,work_reference_name,work_reference_phone,income_verification_status,identity_verification_status,employment_verification_status,financial_data_consent").eq("id", application.customer_id).eq("tenant_id", access.membership.tenant_id).maybeSingle(),
@@ -131,6 +138,32 @@ export default async function CreditApplicationDetailPage({ params, searchParams
     <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0 space-y-5">
         <section className="km-panel overflow-hidden"><div className="grid divide-y divide-line md:grid-cols-2 md:divide-x md:divide-y-0"><div className="min-w-0 p-5 sm:p-6"><div className="mb-5 flex items-center justify-between gap-2"><h2 className="flex items-center gap-2 text-base font-bold"><UserRound size={18} className="text-accent" aria-hidden/>Cliente</h2><Link href={`/clientes/${application.customer_id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">Ver ficha<ArrowUpRight size={13} aria-hidden/></Link></div><CustomerLabel name={quote.applicant?.customerName ?? "Cliente"}/><dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">{[["Documento",quote.applicant?.identityNumber || customerProfile?.identity_number || "No registrado"],["Teléfono",quote.applicant?.phone || customerProfile?.phone || "No registrado"],["Redes sociales",customerProfile?.social_media || "No registradas"],["Dirección",quote.applicant?.address || customerProfile?.address || "No registrada"],["Ubicación de la casa",customerProfile?.home_location || "No registrada"],["Empleo / empresa",employer],["Ingreso mensual",monthlyIncomeText],["Referencia personal",referenceText]].map(([label,value])=><div key={label} className={label === "Dirección" || label === "Ubicación de la casa" || label === "Referencia personal" ? "sm:col-span-2" : ""}><dt className="text-xs text-muted">{label}</dt><dd className="mt-1 break-words text-secondary">{value}</dd></div>)}</dl></div><div className="min-w-0 p-5 sm:p-6"><h2 className="mb-5 flex items-center gap-2 text-base font-bold"><Smartphone size={18} className="text-accent" aria-hidden/>Equipo</h2><p className="text-xs text-muted">{quote.device?.brand}</p><h3 className="mt-1 break-words text-lg font-semibold">{quote.device?.model ?? "Sin modelo"}</h3><span className="mt-2 inline-flex rounded-md bg-soft px-2.5 py-1 text-xs text-secondary">{quote.device?.condition === "used" ? "Usado" : "Nuevo"}</span><dl className="mt-5 space-y-4 text-sm"><div><dt className="text-xs text-muted">IMEI</dt><dd className="mt-1 select-all break-all font-mono text-secondary">{quote.device?.imei ?? "No registrado"}</dd></div><div><dt className="text-xs text-muted">Sucursal de origen</dt><dd className="mt-1 text-secondary">{quote.device?.inventoryBranch ?? "No registrada"}</dd></div><div><dt className="text-xs text-muted">Precio de venta</dt><dd className="km-amount mt-1 text-xl font-bold text-ink">{money(quote.salePrice)}</dd></div></dl></div></div></section>
+
+        {incomeSource && (
+          <section className="km-panel p-5 sm:p-6">
+            <h2 className="text-base font-bold">Fuente de ingresos</h2>
+            <p className="mt-2 text-sm text-secondary">{incomeSource.label}</p>
+            {incomeSource.value === "business_owner" && (
+              <>
+                <h3 className="mt-4 text-sm font-semibold">Documentos para negocio propio</h3>
+                <ul className="mt-2 divide-y divide-line text-sm">
+                  {businessDocumentRequirements.map(({ field, label }) => (
+                    <li key={field} className="flex flex-wrap justify-between gap-x-3 gap-y-1 py-2">
+                      <span className="text-secondary">{label}</span>
+                      {applicationDriveFileId(application.quote_snapshot, field) ? (
+                        <a href={`/api/solicitudes/${application.id}/documentos/${field}`} download className="font-semibold text-accent hover:underline">
+                          Descargar<span className="sr-only"> {label}</span>
+                        </a>
+                      ) : (
+                        <span className="text-muted">{receivedBusinessDocuments.includes(field) ? "Recepción confirmada" : "Sin adjunto"}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
 
         {evaluation && (
           <section className="km-panel p-5 sm:p-6">

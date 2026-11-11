@@ -7,6 +7,7 @@ import { getTenantAccess } from "@/lib/security/tenant-access";
 import { DEFAULT_FINANCING_SETTINGS } from "@/modules/financing/calculator";
 import { CreditApplicationForm } from "@/modules/financing/application-form";
 import { newFinancingTerms } from "@/modules/financing/term-policy";
+import { isApplicationDriveConfigured } from "@/lib/financing/application-drive.server";
 
 export default async function NewCreditApplicationPage() {
   const access = await getTenantAccess("financing.write");
@@ -36,6 +37,6 @@ export default async function NewCreditApplicationPage() {
     <div className="mb-6"><p className="text-xs text-muted">{branchName}</p><h1 className="mt-1 text-[26px] font-bold tracking-[-.6px] text-ink">Nueva solicitud de financiamiento</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted">Completa los datos del cliente y su equipo. Revisa la cotización antes de enviarla a evaluación.</p></div>
     {(settingsResult.error || branchesResult.error) && <p role="alert" className="mb-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning">No se pudieron cargar las sucursales o los ajustes disponibles para tu usuario.</p>}
     {!branches.length && <p role="alert" className="mb-4 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">No hay sucursales visibles para asignar esta solicitud. Asigna la membresía a una sucursal o concede acceso de administración central.</p>}
-    {branches.length > 0 && <CreditApplicationForm branches={branches} defaultBranchId={defaultBranchId} settings={settings} submissionKey={crypto.randomUUID()} today={today}/>}
+    {branches.length > 0 && <CreditApplicationForm branches={branches} defaultBranchId={defaultBranchId} settings={settings} submissionKey={crypto.randomUUID()} today={today} applicationDriveReady={isApplicationDriveConfigured(access.membership.tenant_id)}/>}
   </main></div>;
 }
