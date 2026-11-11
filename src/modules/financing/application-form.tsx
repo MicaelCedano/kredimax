@@ -22,7 +22,7 @@ import {
 import { formatDop } from "@/lib/format-money";
 import { imeiValidationMessage } from "@/lib/validation/imei";
 import { applicationFields } from "@/modules/financing/application-errors";
-import { applicationIncomeSources, businessDocumentRequirements } from "@/modules/financing/application-income";
+import { applicationIncomeSources, businessDocumentRequirements, businessDocumentsUnavailableMessage } from "@/modules/financing/application-income";
 import { BusinessDocumentInputs } from "@/modules/financing/business-document-inputs";
 import { hasVariableInstallments, InstallmentSummary } from "@/modules/financing/installment-summary";
 import { DownPaymentSelector } from "@/modules/financing/down-payment-selector";
@@ -68,8 +68,8 @@ const applicationErrorMessages: Record<string, string> = {
   unavailable: "No se pudo consultar la información necesaria. Tus datos siguen en el formulario; vuelve a intentar.",
   "invalid-form": "Hay datos con formato inválido. Revisa los campos indicados abajo.",
   "business-documents-invalid": "Revisa los archivos adjuntos requeridos para negocio propio.",
-  "application-drive-not-configured": "El administrador debe conectar Google Drive antes de enviar solicitudes de negocio propio.",
-  "application-drive-upload-failed": "No se pudieron guardar los archivos en Google Drive. Vuelve a intentarlo.",
+  "application-drive-not-configured": businessDocumentsUnavailableMessage,
+  "application-drive-upload-failed": "No se pudieron guardar los archivos. Vuelve a intentarlo.",
   "invalid-customer": "Revisa el nombre y los datos del cliente.",
   "customer-not-found": "El cliente seleccionado ya no está disponible. Búscalo de nuevo.",
   "branch-required": "Selecciona una sucursal válida.",

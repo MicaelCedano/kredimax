@@ -11,6 +11,7 @@ export const businessDocumentRequirements = [
 
 export type BusinessDocumentField = (typeof businessDocumentRequirements)[number]["field"];
 export const businessDocumentsMaxBytes = 4_000_000;
+export const businessDocumentsUnavailableMessage = "La carga de documentos no está disponible. Comunícate con el administrador.";
 export const businessDocumentExtensions = {
   "application/pdf": "pdf",
   "image/jpeg": "jpg",

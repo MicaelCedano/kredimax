@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { businessDocumentExtensions, businessDocumentRequirements, businessDocumentsMaxBytes, type BusinessDocumentField } from "./application-income";
+import { businessDocumentExtensions, businessDocumentRequirements, businessDocumentsMaxBytes, businessDocumentsUnavailableMessage, type BusinessDocumentField } from "./application-income";
 
 const documentTypes = Object.keys(businessDocumentExtensions);
 const documentAccept = [...documentTypes, ".pdf", ".jpg", ".jpeg", ".png", ".webp"].join(",");
@@ -44,7 +44,7 @@ export function BusinessDocumentInputs({ driveReady, fieldErrors }: { driveReady
     <fieldset ref={fieldset} className="min-w-0 space-y-3 rounded-lg border border-line bg-subtle p-4 sm:col-span-2" aria-describedby="business-documents-instructions">
       <legend className="px-1 text-sm font-bold text-ink">Documentos para negocio propio</legend>
       <p id="business-documents-instructions" className="text-xs text-muted">Adjunta un PDF o una imagen JPG, PNG o WebP por requisito. Los tres archivos juntos deben pesar 4 MB o menos.</p>
-      {!driveReady && <p role="status" className="rounded-lg border border-warning-line bg-warning-soft p-2 text-xs text-warning">El administrador debe conectar Google Drive antes de enviar solicitudes de negocio propio.</p>}
+      {!driveReady && <p role="status" className="rounded-lg border border-warning-line bg-warning-soft p-2 text-xs text-warning">{businessDocumentsUnavailableMessage}</p>}
       {businessDocumentRequirements.map(({ field, label }) => {
         const error = errors[field] ?? fieldErrors[field];
         const inputId = `application-${field}`;

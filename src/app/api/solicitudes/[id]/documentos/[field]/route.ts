@@ -46,6 +46,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch {
-    return documentError("No se pudo descargar el documento desde Google Drive.", 502);
+    return documentError("No se pudo descargar el documento. Vuelve a intentarlo.", 502);
   }
 }
