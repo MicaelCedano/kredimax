@@ -15,6 +15,15 @@ export function cashExpected(row: CashRow, method: CashMethod) {
   return decimalToCents(row.closing ? row.closing[expectedKeys[method]] : row[method]);
 }
 
+export function declaredCashAmounts(rows: CashRow[]): Record<CashMethod, bigint> {
+  const amounts = { cash: 0n, transfer: 0n, other: 0n };
+  for (const row of rows) {
+    if (!row.closing) continue;
+    for (const method of CASH_METHODS) amounts[method] += decimalToCents(row.closing[method]);
+  }
+  return amounts;
+}
+
 export function hasCashDifference(row: CashRow) {
   return Boolean(row.closing && CASH_METHODS.some(method => decimalToCents(row.closing![method]) !== cashExpected(row, method)));
 }
@@ -64,13 +73,17 @@ export function summarizeCashRows(rows: CashRow[]) {
 }
 
 export function compareCashDeclaration(row: CashRow, values: Record<CashMethod, string>) {
+  return compareCashAmounts({ cash: cashExpected(row, "cash"), transfer: cashExpected(row, "transfer"), other: cashExpected(row, "other") }, values);
+}
+
+export function compareCashAmounts(expected: Record<CashMethod, bigint>, values: Record<CashMethod, string>, maxWholeDigits = 12) {
   const amounts = {} as Record<CashMethod, bigint | null>;
   for (const method of CASH_METHODS) {
-    try { amounts[method] = decimalToCents(values[method]); }
+    try { amounts[method] = decimalToCents(values[method], maxWholeDigits); }
     catch { amounts[method] = null; }
   }
   const complete = CASH_METHODS.every(method => amounts[method] !== null);
-  const differences = Object.fromEntries(CASH_METHODS.map(method => [method, amounts[method] === null ? null : amounts[method]! - cashExpected(row, method)])) as Record<CashMethod, bigint | null>;
+  const differences = Object.fromEntries(CASH_METHODS.map(method => [method, amounts[method] === null ? null : amounts[method]! - expected[method]])) as Record<CashMethod, bigint | null>;
   return {
     complete,
     differences,

@@ -30,12 +30,12 @@
 .cash-progress-counts>p+ p { border-left: 1px solid var(--line); padding-left: 20px; }
 .cash-progress-counts b { display: block; font-size: 20px; font-weight: 650; line-height: 1.2; }
 .cash-progress-counts span { display: block; margin-top: 1px; color: var(--muted); font-size: 12px; }
-.cash-progress-note { margin-top: 10px; font-size: 11px; color: var(--muted); line-height: 1.5; }
 .cash-saved-totals { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; display: grid; gap: 8px; font-size: 11px; }
 .cash-saved-totals>div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 10px; }
 .cash-saved-totals dt { color: var(--muted); }
 .cash-saved-totals dd { font-weight: 600; }
 .cash-section-header { margin-bottom: 12px; }
+.cash-section-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
 .cash-section-header h2 { font-size: 22px; font-weight: 650; line-height: 1.3; letter-spacing: -.6px; }
 .cash-section-header p { margin-top: 5px; font-size: 13px; color: var(--muted); line-height: 1.6; }
 .cash-seller-list { display: flex; flex-direction: column; gap: 14px; }
@@ -49,6 +49,18 @@
 .cash-status-warning { color: var(--warning); background: var(--warning-soft); }
 .cash-status-success { color: var(--positive); background: var(--positive-soft); }
 .cash-status-danger { color: var(--danger); background: var(--danger-soft); }
+.cash-handoff { padding: 12px 0; }
+.cash-handoff-timeline,.cash-handoff-totals { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; font-size: 12px; }
+.cash-handoff-timeline dt,.cash-handoff-totals dt { color: var(--muted); }
+.cash-handoff-timeline dd,.cash-handoff-totals dd { margin-top: 4px; font-weight: 600; overflow-wrap: anywhere; }
+.cash-handoff-totals { grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.cash-handoff-receipt { padding: 10px; margin-top: 10px; border: 1px solid var(--line); border-radius: 9px; }
+.cash-handoff-receipt h4 { margin-bottom: 6px; font-size: 12px; font-weight: 650; }
+.cash-handoff-note { margin-top: 8px; color: var(--ink); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cash-handoff-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+.cash-handoff-actions .km-secondary { min-height: 44px; padding: 8px 12px; border-radius: 10px; font-size: 12px; }
+.cash-count-group { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; }
+.cash-count-group legend { padding: 0 4px; font-size: 13px; font-weight: 650; }
 .cash-seller-body { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 12px 0; }
 .cash-kind { display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "heading actions" "total actions" "methods methods" "count count" "print print"; column-gap: 12px; align-content: start; min-width: 0; padding-right: 23px; }
 .cash-kind+.cash-kind { border-left: 1px solid var(--line); padding-right: 0; padding-left: 23px; }
@@ -61,7 +73,6 @@
 .cash-kind-actions>button { min-height: 36px; border-radius: 8px; padding: 7px 13px; font-size: 12px; font-weight: 600; }
 .cash-kind-actions>a { display: inline-flex; min-height: 30px; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: var(--accent); }
 .cash-kind-actions>a:hover { text-decoration: underline; }
-.cash-readonly-status { color: var(--muted); font-size: 12px; text-align: right; padding: 7px 0; }
 .cash-kind-methods { grid-area: methods; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px 18px; margin-top: 10px; }
 .cash-kind-methods>div+div { border-left: 1px solid var(--line); padding-left: 18px; }
 .cash-kind-methods>div:nth-child(3) { border-left: 0; padding-left: 0; }
@@ -78,9 +89,6 @@
 .cash-help-content>p { margin-top: 12px; color: var(--muted); }
 .cash-print-date,.cash-print-detail { display: none; }
 .cash-count-form { display: flex; flex-direction: column; gap: 16px; }
-.cash-count-expected { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border: 1px solid var(--accent-line); border-radius: 12px; padding: 15px; background: var(--accent-soft); }
-.cash-count-expected>span { color: var(--secondary); font-size: 12px; }
-.cash-count-expected>b { font-size: 23px; line-height: 1.3; font-weight: 650; }
 .cash-count-column-labels { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: 12px; margin-bottom: -10px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .cash-count-column-labels>span:last-child { text-align: right; }
 .cash-count-methods { border-top: 1px solid var(--line); }
@@ -94,7 +102,6 @@
 .cash-feedback svg { flex-shrink: 0; margin-top: 2px; }
 .cash-feedback p { font-weight: 550; }
 .cash-feedback span { display: block; margin-top: 3px; font-size: 11px; }
-.cash-feedback-neutral { color: var(--secondary); background: var(--subtle); }
 .cash-feedback-success { color: var(--positive); background: var(--positive-soft); border-color: var(--positive-line); }
 .cash-feedback-danger { color: var(--danger); background: var(--danger-soft); border-color: var(--danger-line); }
 .cash-count-notes { color: var(--secondary); font-size: 12px; font-weight: 550; }
@@ -134,7 +141,7 @@
   .cash-progress-panel h2,.cash-progress-total,.cash-progress-caption { grid-column: 1; }
   .cash-progress-line { grid-column: 2; grid-row: 1 / 3; align-self: center; margin-top: 0; }
   .cash-progress-counts { grid-column: 2; grid-row: 3 / 5; margin-top: 8px; }
-  .cash-progress-note,.cash-saved-totals { grid-column: 1 / -1; }
+  .cash-saved-totals { grid-column: 1 / -1; }
   .cash-grand-total { font-size: 36px; }
 }
 @media (max-width: 719px) {
@@ -173,6 +180,9 @@
   .cash-seller { padding: 0 16px; }
   .cash-seller-header { align-items: flex-start; }
   .cash-seller-person h3 { font-size: 13px; }
+  .cash-handoff-timeline { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .cash-handoff-timeline > div { display: grid; grid-template-columns: minmax(85px, .8fr) minmax(0,1.2fr); gap: 8px; }
+  .cash-handoff-timeline dd { margin-top: 0; }
   .cash-avatar { height: 34px; width: 34px; }
   .cash-status { font-size: 10px; padding: 5px 8px; }
   .cash-seller-body { display: block; padding-top: 17px; padding-bottom: 18px; }

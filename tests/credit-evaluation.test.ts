@@ -171,6 +171,7 @@ describe("KrediMax Internal Credit Evaluation & Capacity Engine", () => {
       termMonths: evaluation.recommendedTermMonths,
       frequency: "monthly",
       firstInstallmentDate: "2026-11-15",
+      today: "2026-11-01",
       recoveryEnabled: evaluation.policySnapshot.recoveryEnabled,
     });
 

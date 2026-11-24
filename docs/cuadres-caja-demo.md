@@ -1,6 +1,6 @@
 # Cuadres diarios y vendedores de demostración
 
-Implementado y comprobado en la base local. Las migraciones nuevas son `0078_daily_cash_closings` y `0079_cash_movement_detail`.
+El cuadre usa `0078_daily_cash_closings` y `0079_cash_movement_detail`. La migración `0086_cash_drawer_handoff` agrega apertura, entrega y recepción por vendedor, sucursal y fecha.
 
 La migración posterior `0080_application_creator_scope` limita las solicitudes y sus eventos al usuario que las creó. Solo el administrador de empresa puede consultar todas, ver el vendedor en la lista y el detalle, y filtrar por vendedor. La restricción también aplica al acceso directo por URL y a las lecturas de la API. Los demás módulos mantienen sus permisos existentes.
 
@@ -14,18 +14,20 @@ Las cuentas locales son `vendedor1@demo.kredimax.test`, `vendedor2@demo.kredimax
 
 ## Operación diaria
 
-1. Al recibir un inicial, registrar la entrega y su evidencia desde la solicitud aprobada. Se atribuye a quien recibe el dinero y al día real del cobro, aunque la fecha de entrega del equipo sea anterior.
-2. Para las cuotas, usar **Cobros → Registrar pago**. Elegir método y monto. **Imprimir formato para firma** permite imprimir antes de adjuntar la foto firmada. El formato previo no registra dinero ni reserva un folio.
-3. Al guardar el inicial o la cuota, el sistema abre el recibo numerado, listo para imprimir. La numeración de nuevos financiamientos es `FIN-año-correlativo`; la de recibos es `REC-año-correlativo`, por empresa y año. Los documentos anteriores conservan su identificación.
-4. En **Cuadre de cajas**, elegir fecha y vendedor. **Ver movimientos y comprobantes** muestra cada entrada o reverso con cliente, contrato y recibo. Sus totales incluyen todas las páginas.
-5. Cerrar **Iniciales** y **Cuotas recurrentes** por separado. Escribir efectivo entregado, transferencias verificadas y tarjeta/otros. Una diferencia por método exige observación, incluso si los faltantes y sobrantes se compensan entre sí.
-6. El consolidado indica cierres pendientes y diferencias. Solo muestra todas las cajas cuadradas cuando todos los cierres visibles están guardados y cada método coincide. Se puede imprimir el cuadre y firmar entrega/recepción.
+1. Pulsar **Abrir caja** al iniciar. Se guarda el usuario y la hora de la apertura, incluso en días sin cobros.
+2. Registrar el inicial y su evidencia desde la solicitud aprobada o la cuota desde **Cobros → Registrar pago**. El cobro se atribuye a su receptor y al día en que se registró. El sistema abre el recibo numerado al guardar el pago.
+3. En **Cuadre de cajas**, elegir fecha y vendedor. **Ver movimientos** muestra cada entrada o reverso con cliente, contrato y recibo.
+4. Pulsar **Cerrar y entregar cuadre**. Contar iniciales y cuotas en sus secciones y guardar juntos. Las transferencias esperadas en cero se completan automáticamente. Una diferencia por método exige observación.
+5. Desde otra cuenta autorizada, pulsar **Confirmar recepción** y declarar el efectivo y los demás importes verificados. El administrador puede confirmar para la empresa y el gerente para su sucursal. Si hay diferencias con lo declarado, explicar el motivo. La recepción queda registrada junto al cierre original.
+6. Revisar la tarjeta del vendedor. El sistema muestra apertura, cierre y entrega, y recepción, con los responsables y las horas en República Dominicana. Un cierre anterior conserva su hora y puede entregarse expresamente. Las aperturas históricas sin registro se muestran como tales.
 
-Las transferencias declaradas como verificadas las confirma el operador; no hay conexión bancaria automática. Un cierre es definitivo para vendedor, sucursal, fecha y tipo. No se permite agregar cobros ni reversos a esa combinación después del cierre. Un reverso de otro día se registra como movimiento negativo del día del reverso en la caja del receptor original; no cambia el total de un día anterior.
+El operador verifica las transferencias. El cierre y entrega bloquea cobros y reversos para la caja de ese vendedor, sucursal y fecha. Un reverso de otro día se registra como movimiento negativo del día del reverso en la caja del receptor original.
 
 ## Validación
 
-La pantalla agrupa los dos cierres de cada vendedor en una sola caja. El resumen destaca el total cobrado, iniciales, cuotas, métodos de pago y avance de los cierres. **Cuadrar iniciales / Cuadrar cuotas** abre el conteo con comparación en vivo: los campos vacíos no son cero y una diferencia por método exige observación aunque el total neto coincida. **Ver cierre** permite revisar uno ya guardado. En móvil, sus comparaciones se presentan por método sin tablas horizontales. La pantalla conserva las mismas operaciones y permisos.
+La prueba `npm run db:test:cash` cubre apertura sin movimientos, cierre atómico, recepción por otro usuario, discrepancias por método, aislamiento, auditoría y conservación de cierres anteriores. Se ejecuta solo en una base local y revierte los datos ficticios.
+
+### Verificaciones anteriores al flujo de recepción
 
 - `npm test`: 221 pruebas aprobadas y una prueba omitida existente, incluidas nueve verificaciones del resumen, los cierres parciales, los reversos y las diferencias por método.
 - `npm run lint`, `npm run typecheck`, `npm run build`: aprobados.

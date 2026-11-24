@@ -9,13 +9,16 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { getTenantAccess } from "@/lib/security/tenant-access";
 import { isoDateInTimeZone } from "@/lib/business-date";
 import { CashDaySummary } from "@/modules/cash/day-summary";
+import { CashOpenButton } from "@/modules/cash/closing-form";
 import { SellerCashCard } from "@/modules/cash/seller-cash-card";
 import { groupCashRows } from "@/modules/cash/summary";
 import type { CashRow } from "@/modules/cash/types";
 import "./cash.css";
 
 export default async function CashPage({ searchParams }: { searchParams: Promise<{ dia?: string; vendedor?: string }> }) {
-  const [query, access, closingAccess] = await Promise.all([searchParams, getTenantAccess("cash.read"), getTenantAccess("cash.close")]);
+  const [query, access, closingAccess, receiptAccess] = await Promise.all([
+    searchParams, getTenantAccess("cash.read"), getTenantAccess("cash.close"), getTenantAccess("cash.receive"),
+  ]);
   if (!access.ok && access.reason === "unauthenticated") redirect("/login");
   const today = isoDateInTimeZone(new Date());
   const day = query.dia ?? today;
@@ -25,8 +28,13 @@ export default async function CashPage({ searchParams }: { searchParams: Promise
   const rows = query.vendedor ? allRows.filter(row => row.sellerId === query.vendedor) : allRows;
   const sellers = [...new Map(allRows.map(row => [row.sellerId, row.sellerName])).entries()];
   const groups = groupCashRows(rows);
+  const sessions = groups.flatMap(group => group.rows[0].session ?? []);
   const hasError = !access.ok || !valid || result?.error || !result?.data;
   const canClose = closingAccess.ok && access.ok && closingAccess.membership.tenant_id === access.membership.tenant_id && day <= today;
+  const canReceive = receiptAccess.ok && access.ok && receiptAccess.membership.tenant_id === access.membership.tenant_id;
+  const ownBranch = access.ok ? access.membership.branch_id : null;
+  const showOwnOpenButton = access.ok && canClose && day === today && !query.vendedor && ownBranch
+    && !allRows.some(row => row.sellerId === access.userId && row.branchId === ownBranch);
   const ownDrawer = access.ok && ["sales", "cashier", "collections"].includes(access.membership.role);
   return <div className="min-h-screen bg-canvas"><Sidebar/><Topbar/>
     <main id="main-content" tabIndex={-1} className="cash-workspace km-main px-4 sm:px-7 lg:ml-[244px]">
@@ -38,14 +46,21 @@ export default async function CashPage({ searchParams }: { searchParams: Promise
       </form>
       <p className="cash-print-date">Fecha del cuadre: {day} · Hora de República Dominicana</p>
       {hasError ? <p role="alert" className="km-panel p-5 text-danger">{!valid ? "Selecciona una fecha y un vendedor válidos." : "No se pudieron cargar las cajas. Revisa tu sesión y vuelve a intentarlo."}</p> : <>
-        <CashDaySummary rows={rows}/>
+        <CashDaySummary rows={rows} sessions={sessions}/>
         <section className="cash-sellers" aria-labelledby="cash-sellers-title">
-          <header className="cash-section-header"><h2 id="cash-sellers-title">Cajas por vendedor</h2><p>Cada vendedor cierra sus iniciales y sus cuotas por separado.</p></header>
-          {groups.length ? <div className="cash-seller-list">{groups.map(group => <SellerCashCard key={group.key} group={group} day={day} canClose={canClose}/>)}</div>
+          <header className="cash-section-header cash-section-actions"><h2 id="cash-sellers-title">Cajas por vendedor</h2>
+            {showOwnOpenButton && ownBranch && <div className="cash-handoff-actions print:hidden"><CashOpenButton key={day} branchId={ownBranch} day={day}/></div>}
+          </header>
+          {groups.length ? <div className="cash-seller-list">{groups.map(group => <SellerCashCard key={group.key} group={group} day={day}
+            isToday={day === today} viewerId={access.ok ? access.userId : ""} canClose={canClose} canReceive={canReceive}/>)}</div>
             : <div className="km-panel"><EmptyState title="No hay cajas para esta selección" description="Prueba otra fecha o selecciona todos los vendedores." href="/cajas" action="Ver cajas de hoy"/></div>}
         </section>
         <details className="cash-help km-panel print:hidden"><summary><HelpCircle size={16} aria-hidden/><span>Cómo funciona el cuadre</span><ChevronDown size={16} className="cash-help-chevron" aria-hidden/></summary>
-          <div className="cash-help-content"><ol><li><b>Revisa los cobros.</b> Los iniciales se registran al entregar equipos; las cuotas son los abonos posteriores.</li><li><b>Cuenta y verifica.</b> Compara el efectivo que entrega el vendedor y las transferencias confirmadas con lo esperado.</li><li><b>Guarda cada cierre.</b> Si hay diferencias por método, explica el motivo. La caja queda cuadrada cuando todos los importes coinciden.</li></ol><p>La fecha corresponde al día real del cobro, en hora de República Dominicana. Los reversos restan en el día en que se registran, en la caja de quien recibió el pago original.</p><p>Un cierre guardado no acepta nuevos movimientos para ese vendedor, fecha y tipo de cobro. El total del día incluye los reversos; «Otros» agrupa tarjetas y métodos históricos.</p></div>
+          <div className="cash-help-content"><ol>
+            <li><b>Abre tu caja.</b> Registra la hora al empezar, incluso si todavía no tienes cobros.</li>
+            <li><b>Cierra y entrega el cuadre.</b> Cuenta el efectivo y verifica los demás métodos para iniciales y cuotas. Explica cualquier diferencia.</li>
+            <li><b>Confirma la recepción.</b> Otra persona autorizada registra los importes recibidos y explica cualquier diferencia con lo declarado.</li>
+          </ol><p>Las horas se muestran en horario de República Dominicana. Al cerrar y entregar se bloquean nuevos movimientos de esa caja para la fecha seleccionada.</p></div>
         </details>
       </>}
     </main>

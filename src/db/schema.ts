@@ -230,6 +230,29 @@ export const cashClosings = pgTable("cash_closings", {
   foreignKey({ columns: [t.tenantId, t.branchId], foreignColumns: [branches.tenantId, branches.id] }),
   foreignKey({ columns: [t.tenantId, t.sellerId], foreignColumns: [tenantMemberships.tenantId, tenantMemberships.userId] }),
 ]);
+export const cashDrawerSessions = pgTable("cash_drawer_sessions", {
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: uuid("branch_id").notNull(),
+  sellerId: uuid("seller_id").notNull(),
+  businessDate: date("business_date").notNull(),
+  openedAt: timestamp("opened_at", { withTimezone: true }),
+  openedBy: uuid("opened_by"),
+  openedByName: text("opened_by_name"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  deliveredBy: uuid("delivered_by"),
+  deliveredByName: text("delivered_by_name"),
+  receivedAt: timestamp("received_at", { withTimezone: true }),
+  receivedBy: uuid("received_by"),
+  receivedByName: text("received_by_name"),
+  receivedCash: numeric("received_cash", { precision: 15, scale: 2 }),
+  receivedTransfer: numeric("received_transfer", { precision: 15, scale: 2 }),
+  receivedOther: numeric("received_other", { precision: 15, scale: 2 }),
+  receiptNotes: text("receipt_notes"),
+}, (t) => [
+  primaryKey({ columns: [t.tenantId, t.businessDate, t.branchId, t.sellerId] }),
+  foreignKey({ columns: [t.tenantId, t.branchId], foreignColumns: [branches.tenantId, branches.id] }),
+  foreignKey({ columns: [t.tenantId, t.sellerId], foreignColumns: [tenantMemberships.tenantId, tenantMemberships.userId] }),
+]);
 export const paymentEvidence = pgTable("payment_evidence", {
   paymentId: uuid("payment_id").primaryKey(), tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
   imageData: photoBytes("image_data").notNull(), contentType: text("content_type").notNull().default("image/webp"),

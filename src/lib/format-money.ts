@@ -1,15 +1,16 @@
 const wholePesos = new Intl.NumberFormat("es-DO", { maximumFractionDigits: 0 });
 
-export function decimalToCents(value: string | number) {
+export function decimalToCents(value: string | number, maxWholeDigits = 12) {
   const normalized = typeof value === "string"
     ? value.trim()
     : Number.isFinite(value) ? String(value) : "";
-  if (!/^-?(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/.test(normalized)) {
+  if (!/^-?(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(normalized)) {
     throw new Error("Importe DOP inválido.");
   }
   const negative = normalized.startsWith("-");
   const unsigned = negative ? normalized.slice(1) : normalized;
   const [whole, fraction = ""] = unsigned.split(".");
+  if (whole.length > maxWholeDigits) throw new Error("Importe DOP inválido.");
   const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
   return negative ? -cents : cents;
 }

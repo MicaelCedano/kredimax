@@ -8,7 +8,8 @@ const url = new URL(line.slice(13).trim().replace(/^['"]|['"]$/g, ""));
 if (!["127.0.0.1", "localhost"].includes(url.hostname)) throw new Error("Local database required.");
 const sql = postgres(url.toString(), { max: 1, prepare: false });
 const tenant = randomUUID(), outside = randomUUID(), branch = randomUUID(), otherBranch = randomUUID();
-const admin = randomUUID(), auditor = randomUUID(), outsider = randomUUID(), sellers = [randomUUID(), randomUUID(), randomUUID()], otherSeller = randomUUID();
+const admin = randomUUID(), auditor = randomUUID(), outsider = randomUUID(), otherManager = randomUUID();
+const sellers = [randomUUID(), randomUUID(), randomUUID()], otherSeller = randomUUID();
 const rollback = new Error("ROLLBACK_CASH_FIXTURES");
 function testImei() {
   const digits = randomUUID().replace(/\D/g, "").padEnd(14, "0").slice(0, 14);
@@ -20,12 +21,12 @@ const evidence = Buffer.from("524946463600000057454250565038202a0000003003009d01
 try {
   try {
     await sql.begin(async tx => {
-      for (const [id, name] of [[admin,"Admin"],[auditor,"Auditor"],[outsider,"Fuera"],[otherSeller,"Otra sucursal"],...sellers.map((id,index)=>[id,`Vendedor ${index+1}`])]) {
+      for (const [id, name] of [[admin,"Admin"],[auditor,"Auditor"],[outsider,"Fuera"],[otherManager,"Gerente"],[otherSeller,"Otra sucursal"],...sellers.map((id,index)=>[id,`Vendedor ${index+1}`])]) {
         await tx`INSERT INTO auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data) VALUES(${id},'authenticated','authenticated',${`${id}@example.test`},'{}',${tx.json({ full_name:name })})`;
       }
       await tx`INSERT INTO public.tenants(id,name) VALUES(${tenant},'Disposable cash'),(${outside},'Outside cash')`;
       await tx`INSERT INTO public.branches(id,tenant_id,name,code) VALUES(${branch},${tenant},'Home','HOME'),(${otherBranch},${tenant},'Other','OTHER')`;
-      for (const [id, role, scope, company] of [[admin,"tenant_admin",branch,tenant],[auditor,"auditor",branch,tenant],[outsider,"tenant_admin",null,outside],...sellers.map(id=>[id,"sales",branch,tenant]),[otherSeller,"sales",otherBranch,tenant]]) {
+      for (const [id, role, scope, company] of [[admin,"tenant_admin",branch,tenant],[auditor,"auditor",branch,tenant],[outsider,"tenant_admin",null,outside],[otherManager,"branch_manager",otherBranch,tenant],...sellers.map(id=>[id,"sales",branch,tenant]),[otherSeller,"sales",otherBranch,tenant]]) {
         await tx`INSERT INTO public.tenant_memberships(tenant_id,user_id,role,branch_id) VALUES(${company},${id},${role},${scope})`;
       }
       const asUser = async userId => {
@@ -126,6 +127,61 @@ try {
       await close(sellers[1],'installment','50','100');
       const [{count}] = await tx`SELECT count(*)::int AS count FROM public.audit_logs WHERE tenant_id=${tenant} AND action='cash.closed'`;
       assert.equal(count,3);
+
+      const open = (targetBranch, day=today) => tx`SELECT public.open_cash_drawer(${tenant},${targetBranch},${day}::date)`;
+      const deliver = (targetBranch, seller, counts) => tx`SELECT public.deliver_cash_drawer(${tenant},${targetBranch},${seller},${today}::date,${tx.json(counts)}::jsonb)`;
+      const receive = (targetBranch, seller, cash, transfer, notes="") => tx`SELECT public.receive_cash_drawer(${tenant},${targetBranch},${seller},${today}::date,${cash}::numeric,${transfer}::numeric,0,${notes})`;
+      const zero = { cash: "0", transfer: "0", other: "0", notes: "" };
+      const dailyDrawer = async seller => (await report()).filter(row => row.sellerId === seller);
+
+      await asUser(otherSeller);
+      await failure(() => open(branch), /FORBIDDEN/);
+      await failure(() => open(otherBranch,yesterday), /INVALID_DAY/);
+      await failure(() => deliver(otherBranch, otherSeller, { down_payment: zero, installment: zero }), /CASH_OPEN_REQUIRED/);
+      await open(otherBranch);
+      const opened = (await dailyDrawer(otherSeller))[0].session.opened_at;
+      assert.ok(opened);
+      await open(otherBranch);
+      assert.equal((await dailyDrawer(otherSeller))[0].session.opened_at, opened);
+      await failure(() => deliver(otherBranch, otherSeller, { down_payment: zero }), /CASH_REVIEW_REQUIRED/);
+      assert.ok((await dailyDrawer(otherSeller)).every(row => !row.closing), "Incomplete delivery rolls back all closes");
+      await failure(sp => sp`UPDATE public.cash_drawer_sessions SET opened_at=clock_timestamp() WHERE tenant_id=${tenant}`, /42501/);
+
+      await asUser(admin);
+      await failure(() => receive(otherBranch, otherSeller, "0", "0"), /CASH_NOT_DELIVERED/);
+      await deliver(otherBranch, otherSeller, { down_payment: zero, installment: zero });
+      assert.ok((await dailyDrawer(otherSeller)).every(row => row.closing && row.session.delivered_at));
+      assert.equal((await dailyDrawer(otherSeller))[0].session.received_at, null);
+      await failure(() => deliver(otherBranch, otherSeller, {}), /CASH_ALREADY_DELIVERED/);
+      await failure(() => receive(otherBranch, otherSeller, "0", "0"), /CASH_SELF_RECEIPT/);
+      await asUser(otherSeller);
+      await failure(() => receive(otherBranch, otherSeller, "0", "0"), /FORBIDDEN/);
+      await asUser(otherManager);
+      await receive(otherBranch, otherSeller, "0", "0");
+      const received = (await dailyDrawer(otherSeller))[0].session;
+      assert.equal(received.received_by_name, "Gerente");
+      assert.equal(received.received_cash, "0.00");
+      await receive(otherBranch, otherSeller, "0", "0");
+      assert.equal((await dailyDrawer(otherSeller))[0].session.received_at, received.received_at);
+      await failure(() => receive(branch, sellers[0], "3090","3110"), /FORBIDDEN/);
+      assert.equal((await dailyDrawer(sellers[0])).length, 0);
+
+      await asUser(sellers[0]);
+      await deliver(branch, sellers[0], {});
+      assert.equal((await dailyDrawer(sellers[0]))[0].session.opened_at, null, "Legacy closes do not invent an opening");
+      assert.equal((await dailyDrawer(sellers[0]))[0].session.delivered_by_name, "Vendedor 1");
+      await asUser(admin);
+      await failure(() => receive(branch, sellers[0], "3089", "3111"), /RECEIPT_DIFFERENCE_REASON_REQUIRED/);
+      await receive(branch, sellers[0], "3089", "3111", "Diferencia de recepción");
+      const receivedLegacy = await dailyDrawer(sellers[0]);
+      assert.equal(receivedLegacy[0].session.received_by_name, "Admin");
+      assert.equal(receivedLegacy[0].session.receipt_notes, "Diferencia de recepción");
+      assert.equal(receivedLegacy.find(row=>row.type==='installment').closing.cash, "90.00");
+      await failure(() => receive(branch, sellers[0], "3090", "3110"), /CASH_ALREADY_RECEIVED/);
+      const [{events}] = await tx`SELECT array_agg(action ORDER BY action) AS events FROM public.audit_logs
+        WHERE tenant_id=${tenant} AND action IN ('cash.opened','cash.delivered','cash.received')`;
+      assert.deepEqual(events, ['cash.delivered','cash.delivered','cash.opened','cash.received','cash.received']);
+
       await asUser(null);
       const [{numbers,unique_numbers}] = await tx`SELECT count(receipt_number)::int AS numbers,count(DISTINCT receipt_number)::int AS unique_numbers FROM public.payments WHERE tenant_id=${tenant}`;
       assert.equal(numbers,13);assert.equal(numbers,unique_numbers);
@@ -133,5 +189,5 @@ try {
     });
   } catch(error) { if(error!==rollback) throw error; }
   assert.equal((await sql`SELECT id FROM public.tenants WHERE id=${tenant}`).length,0);
-  console.log("Cash checks passed: three sellers; cash/transfer; initial vs installments; actual collection date; totals; zero drawers; role/branch/tenant isolation; numbered receipts; idempotency; differences by method; immutable closes; late posting/reversal rollback; historical reversal dates; audit. All fixtures rolled back.");
+  console.log("Cash checks passed: collection totals, roles, numbered receipts, reversals, drawer opening, atomic delivery, independent receipt, discrepancies, legacy closes and audit. All fixtures rolled back.");
 } finally { await sql.end({timeout:5}); }
