@@ -1,0 +1,83 @@
+{
+  "propiedades": {
+    "exit": 0,
+    "bytes": 34194,
+    "error": ""
+  },
+  "paquetes-todos": {
+    "exit": 0,
+    "bytes": 15135,
+    "error": ""
+  },
+  "paquetes-deshabilitados": {
+    "exit": 0,
+    "bytes": 0,
+    "error": ""
+  },
+  "paquetes-habilitados": {
+    "exit": 0,
+    "bytes": 5666,
+    "error": ""
+  },
+  "paquetes-terceros": {
+    "exit": 0,
+    "bytes": 343,
+    "error": ""
+  },
+  "ajustes-global": {
+    "exit": 0,
+    "bytes": 13167,
+    "error": ""
+  },
+  "ajustes-seguros": {
+    "exit": 0,
+    "bytes": 6862,
+    "error": ""
+  },
+  "ajustes-sistema": {
+    "exit": 0,
+    "bytes": 953,
+    "error": ""
+  },
+  "home": {
+    "exit": 0,
+    "bytes": 133,
+    "error": ""
+  },
+  "home-disponibles": {
+    "exit": 0,
+    "bytes": 8521,
+    "error": ""
+  },
+  "almacenamiento": {
+    "exit": 0,
+    "bytes": 3413,
+    "error": ""
+  },
+  "memoria": {
+    "exit": 0,
+    "bytes": 1277,
+    "error": ""
+  },
+  "pantalla-tamano": {
+    "exit": 0,
+    "bytes": 26,
+    "error": ""
+  },
+  "pantalla-densidad": {
+    "exit": 0,
+    "bytes": 23,
+    "error": ""
+  },
+  "actividad-actual": {
+    "exit": 0,
+    "bytes": 31744,
+    "error": ""
+  },
+  "captura": {
+    "exit": 0,
+    "bytes": 1785335,
+    "png_valido": true,
+    "error": ""
+  }
+}

@@ -23,6 +23,8 @@ export default async function HomePage() {
       if (financing.ok) redirect("/solicitudes");
       const collections = await getTenantAccess("payments.read");
       if (collections.ok) redirect("/cobros");
+      const mdm = await getTenantAccess("mdm.manual");
+      if (mdm.ok) redirect("/mdm");
     }
     const state = resolveDashboardAccessState(
       Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),

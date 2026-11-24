@@ -29,6 +29,8 @@
     "db:test:portfolios": "node scripts/test-customer-portfolios.mjs",
     "db:test:vouchers": "node scripts/test-receipt-directory.mjs",
     "verify:local": "npm run db:preflight:local && npm run verify:code && npm run db:migrate && npm run db:preflight:local && npm run db:test:local && npm run db:test:backup:local",
+    "db:backup:automated": "node scripts/backup-runner.mjs",
+    "db:backup:restore": "node scripts/restore-backup.mjs",
     "db:test:evidence": "node scripts/test-payment-evidence.mjs",
     "db:test:concurrency": "node scripts/run-local-financial-test.mjs --concurrency-only"
   },

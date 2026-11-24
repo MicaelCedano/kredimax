@@ -54,7 +54,7 @@ const userSchema=z.object({
     return val.includes("@") ? val : `${val.replace(/[^a-z0-9._-]/g, "")}@kredimax.com`;
   }),
   password:z.string().min(6).max(256),confirmation:z.string(),branchId:z.string().uuid(),
-  role:z.enum(["sales","branch_manager","cashier","collections","auditor"]),
+  role:z.enum(["sales","branch_manager","cashier","collections","auditor","mdm_operator"]),
 }).refine(s=>s.password===s.confirmation);
 
 export async function createTenantUser(_previous: AccountActionState, form: FormData): Promise<AccountActionState> {

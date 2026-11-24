@@ -1,3 +1,5 @@
+import { businessDocumentRequirements } from "./application-income";
+
 export const applicationFields: Record<string, { label: string; step: number }> = {
   customerId: { label: "Selecciona un cliente existente", step: 0 },
   customerFullName: { label: "Nombre completo", step: 0 },
@@ -6,6 +8,8 @@ export const applicationFields: Record<string, { label: string; step: number }> 
   customerAddress: { label: "Dirección", step: 0 },
   branchId: { label: "Sucursal de origen", step: 0 },
   employer: { label: "Empleo / empresa", step: 0 },
+  incomeSource: { label: "Fuente de ingresos", step: 0 },
+  ...Object.fromEntries(businessDocumentRequirements.map(({ field, label }) => [field, { label, step: 0 }])),
   monthlyIncome: { label: "Ingreso mensual", step: 0 },
   referenceIdentityNumber: { label: "Cédula de referencia", step: 0 },
   referenceName: { label: "Referencia personal", step: 0 },

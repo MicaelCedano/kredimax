@@ -1,4 +1,5 @@
 import { CustomerPhotoEditor } from "@/modules/customers/photo-editor";
+import { CustomerPortalAccessPanel } from "@/modules/customers/portal-access-panel";
 import { responsibleLabel } from "@/modules/customers/portfolio";
 import Link from "next/link";
 import { MoneyInput } from "@/components/forms/money-input";
@@ -85,6 +86,7 @@ export default async function CustomerDetailPage({
     policy,
     internalHistory,
     { data: photo },
+    { data: portalAccount },
   ] = await Promise.all([
     access.supabase
       .from("customers")
@@ -113,6 +115,12 @@ export default async function CustomerDetailPage({
     loadTenantCreditPolicy(access.supabase, access.membership.tenant_id),
     loadCustomerInternalHistory(access.supabase, access.membership.tenant_id, id),
     access.supabase.from("customer_photos").select("updated_at").eq("tenant_id", access.membership.tenant_id).eq("customer_id", id).maybeSingle(),
+    access.supabase
+      .from("customer_portal_accounts")
+      .select("status, must_change_password, provisioned_at, executive_name, executive_whatsapp")
+      .eq("tenant_id", access.membership.tenant_id)
+      .eq("customer_id", id)
+      .maybeSingle(),
   ]);
 
   if (!customer || error) notFound();
@@ -368,6 +376,16 @@ export default async function CustomerDetailPage({
                   </div>
                 </div>
               </dl>
+              <CustomerPortalAccessPanel
+                customerId={customer.id}
+                hasIdentityNumber={Boolean(customer.identity_number)}
+                portalStatus={portalAccount?.status ?? null}
+                mustChangePassword={portalAccount?.must_change_password ?? null}
+                provisionedAt={portalAccount?.provisioned_at ?? null}
+                defaultExecutiveName={portalAccount?.executive_name ?? customer.created_by_name ?? null}
+                defaultExecutiveWhatsapp={portalAccount?.executive_whatsapp ?? null}
+                canWrite={canWrite}
+              />
             </div>
           </section>
 

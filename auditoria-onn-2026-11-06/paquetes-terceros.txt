@@ -1,0 +1,11 @@
+package:com.wbd.stream
+package:com.xuper.netxxus
+package:com.esaba.downloader
+package:com.iqiyi.i18n.tv
+package:com.disney.disneyplus
+package:com.crunchyroll.crunchyroid
+package:com.yablio.sendfilestotv
+package:org.jellyfin.androidtv
+package:tv.twitch.android.app
+package:com.android.mgstv
+package:com.amazon.amazonvideo.livingroom

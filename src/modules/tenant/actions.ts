@@ -7,7 +7,7 @@ import { getTenantAccess } from "@/lib/security/tenant-access";
 
 const schema = z.object({
   membershipId: z.string().uuid(),
-  role: z.enum(["tenant_admin", "branch_manager", "sales", "cashier", "collections", "auditor"]),
+  role: z.enum(["tenant_admin", "branch_manager", "sales", "cashier", "collections", "auditor", "mdm_operator"]),
   branchId: z.union([z.string().uuid(), z.literal("")]),
   status: z.enum(["active", "suspended"]),
 });

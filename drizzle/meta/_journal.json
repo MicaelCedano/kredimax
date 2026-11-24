@@ -575,6 +575,34 @@
       "when": 1793051385271,
       "tag": "0081_expanded_application_down_payment",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1793051400000,
+      "tag": "0082_backup_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1793051500000,
+      "tag": "0083_customer_portal_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1793051600000,
+      "tag": "0084_mdm_operator_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1793051700000,
+      "tag": "0085_manual_mdm_queue",
+      "breakpoints": true
     }
   ]
 }

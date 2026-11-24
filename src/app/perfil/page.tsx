@@ -12,6 +12,7 @@ const roleLabels: Record<string, string> = {
   cashier: "Caja",
   collections: "Cobros",
   auditor: "Auditoría",
+  mdm_operator: "Programador MDM",
   platform_admin: "Administrador de plataforma",
 };
 

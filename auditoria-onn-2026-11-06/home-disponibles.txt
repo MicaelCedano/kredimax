@@ -1,0 +1,127 @@
+3 activities found:
+  Activity #0:
+    priority=2 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true
+    ActivityInfo:
+      name=com.google.android.apps.tv.launcherx.home.HomeActivity
+      packageName=com.google.android.apps.tv.launcherx
+      labelRes=0x7f1401c1 nonLocalizedLabel=null icon=0x0 banner=0x0
+      enabled=true exported=true directBootAware=false
+      taskAffinity=com.google.android.apps.tv.launcherx targetActivity=null persistableMode=PERSIST_ROOT_ONLY
+      launchMode=LAUNCH_SINGLE_TASK flags=0x14230 privateFlags=0x2 theme=0x7f15021b
+      screenOrientation=-1 configChanges=0x73 softInputMode=0x0
+      lockTaskLaunchMode=LOCK_TASK_LAUNCH_MODE_DEFAULT
+      resizeMode=RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION
+      knownActivityEmbeddingCerts={}
+      ApplicationInfo:
+        name=com.google.android.apps.tv.launcherx.LauncherX_Application
+        packageName=com.google.android.apps.tv.launcherx
+        labelRes=0x7f140448 nonLocalizedLabel=null icon=0x7f100001 banner=0x7f080364
+        className=com.google.android.apps.tv.launcherx.LauncherX_Application
+        processName=com.google.android.apps.tv.launcherx
+        taskAffinity=com.google.android.apps.tv.launcherx
+        uid=10060 flags=0x20c83ec5 privateFlags=0x8c881118 theme=0x7f150358
+        requiresSmallestWidthDp=0 compatibleWidthLimitDp=0 largestWidthLimitDp=0
+        sourceDir=/data/app/~~mHWAKXO14Se4568LAYwn3Q==/com.google.android.apps.tv.launcherx-1t1GMMcr25bjnjLKwsIWWQ==/base.apk
+        splitSourceDirs=[/data/app/~~mHWAKXO14Se4568LAYwn3Q==/com.google.android.apps.tv.launcherx-1t1GMMcr25bjnjLKwsIWWQ==/split_config.armeabi_v7a.apk, /data/app/~~mHWAKXO14Se4568LAYwn3Q==/com.google.android.apps.tv.launcherx-1t1GMMcr25bjnjLKwsIWWQ==/split_config.es.apk, /data/app/~~mHWAKXO14Se4568LAYwn3Q==/com.google.android.apps.tv.launcherx-1t1GMMcr25bjnjLKwsIWWQ==/split_config.xhdpi.apk]
+        resourceDirs=[]
+        overlayPaths=[/data/resource-cache/com.android.systemui-neutral-eM2w.frro, /data/resource-cache/com.android.systemui-accent-QvJp.frro, /data/resource-cache/com.android.systemui-dynamic-bYta.frro]
+        seinfo=default:privapp:targetSdkVersion=36
+        seinfoUser=:complete
+        dataDir=/data/user/0/com.google.android.apps.tv.launcherx
+        deviceProtectedDataDir=/data/user_de/0/com.google.android.apps.tv.launcherx
+        credentialProtectedDataDir=/data/user/0/com.google.android.apps.tv.launcherx
+        sharedLibraryFiles=[/system_ext/framework/com.android.libraries.tv.tvsystem.jar]
+        splitClassLoaderNames=[null, null, null]
+        enabled=true minSdkVersion=32 targetSdkVersion=36 versionCode=837595 targetSandboxVersion=1
+        supportsRtl=true
+        fullBackupContent=true
+        crossProfile=false
+        networkSecurityConfigRes=0x7f180017
+        category=7
+        HiddenApiEnforcementPolicy=2
+        usesNonSdkApi=false
+        allowsPlaybackCapture=true
+        nativeHeapZeroInitialized=0
+        enableOnBackInvokedCallback=false
+        createTimestamp=90293157
+  Activity #1:
+    priority=1 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true
+    ActivityInfo:
+      name=com.google.android.tungsten.setupwraith.RecoveryActivity
+      packageName=com.google.android.tungsten.setupwraith
+      labelRes=0x7f12008b nonLocalizedLabel=null icon=0x0 banner=0x0
+      enabled=false exported=true directBootAware=false
+      taskAffinity=com.google.android.tungsten.setupwraith targetActivity=null persistableMode=PERSIST_ROOT_ONLY
+      launchMode=LAUNCH_SINGLE_TOP flags=0x10220 privateFlags=0x2 theme=0x7f130261
+      screenOrientation=-1 configChanges=0x3 softInputMode=0x0
+      lockTaskLaunchMode=LOCK_TASK_LAUNCH_MODE_DEFAULT
+      resizeMode=RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION
+      knownActivityEmbeddingCerts={}
+      ApplicationInfo:
+        name=com.google.android.apps.tv.setupwraith.application.SetupWraithApplication
+        packageName=com.google.android.tungsten.setupwraith
+        labelRes=0x7f12008b nonLocalizedLabel=null icon=0x0 banner=0x0
+        className=com.google.android.apps.tv.setupwraith.application.SetupWraithApplication
+        processName=com.google.android.tungsten.setupwraith
+        taskAffinity=com.google.android.tungsten.setupwraith
+        uid=10058 flags=0x28c83ec5 privateFlags=0x8c081118 theme=0x7f13027a
+        requiresSmallestWidthDp=0 compatibleWidthLimitDp=0 largestWidthLimitDp=0
+        sourceDir=/data/app/~~1-V9HyYu4T-H1gug9bVoag==/com.google.android.tungsten.setupwraith-lqEUticM7QxCZdN6H0z29A==/base.apk
+        resourceDirs=[]
+        overlayPaths=[/data/resource-cache/com.android.systemui-neutral-eM2w.frro, /data/resource-cache/com.android.systemui-accent-QvJp.frro, /data/resource-cache/com.android.systemui-dynamic-bYta.frro]
+        seinfo=default:privapp:targetSdkVersion=36
+        seinfoUser=:complete
+        dataDir=/data/user/0/com.google.android.tungsten.setupwraith
+        deviceProtectedDataDir=/data/user_de/0/com.google.android.tungsten.setupwraith
+        credentialProtectedDataDir=/data/user/0/com.google.android.tungsten.setupwraith
+        sharedLibraryFiles=[/system/framework/org.apache.http.legacy.jar, /system_ext/framework/com.android.libraries.tv.tvsystem.jar]
+        enabled=true minSdkVersion=28 targetSdkVersion=36 versionCode=2018124228 targetSandboxVersion=1
+        supportsRtl=true
+        fullBackupContent=true
+        crossProfile=false
+        category=7
+        HiddenApiEnforcementPolicy=0
+        usesNonSdkApi=false
+        allowsPlaybackCapture=true
+        nativeHeapZeroInitialized=0
+        enableOnBackInvokedCallback=false
+        createTimestamp=90293157
+  Activity #2:
+    priority=-1000 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true
+    ActivityInfo:
+      name=com.android.tv.settings.system.FallbackHome
+      packageName=com.android.tv.settings
+      enabled=true exported=true directBootAware=true
+      taskAffinity=com.android.tv.settings targetActivity=null persistableMode=PERSIST_ROOT_ONLY
+      launchMode=LAUNCH_MULTIPLE flags=0x10220 privateFlags=0x2 theme=0x7f12014b
+      screenOrientation=-1 configChanges=0x40002ff7 softInputMode=0x0
+      lockTaskLaunchMode=LOCK_TASK_LAUNCH_MODE_DEFAULT
+      resizeMode=RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION
+      knownActivityEmbeddingCerts={}
+      ApplicationInfo:
+        name=com.android.tv.settings.TvSettingsApplication
+        packageName=com.android.tv.settings
+        labelRes=0x7f1105e9 nonLocalizedLabel=null icon=0x7f08020b banner=0x7f080138
+        className=com.android.tv.settings.TvSettingsApplication
+        processName=com.android.tv.settings
+        taskAffinity=com.android.tv.settings
+        uid=1000 flags=0x38c8be05 privateFlags=0x8c701168 theme=0x7f1203e1
+        requiresSmallestWidthDp=0 compatibleWidthLimitDp=0 largestWidthLimitDp=0
+        sourceDir=/system_ext/priv-app/TvSettingsTwoPanel/TvSettingsTwoPanel.apk
+        resourceDirs=[/product/overlay/TvSettingsFeatureStringsOverlay.apk, /product/overlay/TvSettingsGmsResOverlay.apk, /product/overlay/TvSettingsGoogleResOverlay.apk, /product/overlay/TvSettingsVendorResOverlay.apk, /product/overlay/GoogleTvConnectedDevicesOverlay.apk, /product/overlay/GTVSettingsResOverlay.apk]
+        overlayPaths=[/data/resource-cache/com.android.systemui-neutral-eM2w.frro, /data/resource-cache/com.android.systemui-accent-QvJp.frro, /data/resource-cache/com.android.systemui-dynamic-bYta.frro, /product/overlay/TvSettingsFeatureStringsOverlay.apk, /product/overlay/TvSettingsGmsResOverlay.apk, /product/overlay/TvSettingsGoogleResOverlay.apk, /product/overlay/TvSettingsVendorResOverlay.apk, /product/overlay/GoogleTvConnectedDevicesOverlay.apk, /product/overlay/GTVSettingsResOverlay.apk]
+        seinfo=platform:privapp:targetSdkVersion=31
+        seinfoUser=:complete
+        dataDir=/data/user_de/0/com.android.tv.settings
+        deviceProtectedDataDir=/data/user_de/0/com.android.tv.settings
+        credentialProtectedDataDir=/data/user/0/com.android.tv.settings
+        enabled=true minSdkVersion=34 targetSdkVersion=34 versionCode=1 targetSandboxVersion=1
+        supportsRtl=true
+        fullBackupContent=true
+        crossProfile=false
+        HiddenApiEnforcementPolicy=0
+        usesNonSdkApi=true
+        allowsPlaybackCapture=true
+        nativeHeapZeroInitialized=0
+        enableOnBackInvokedCallback=false
+        createTimestamp=90293157

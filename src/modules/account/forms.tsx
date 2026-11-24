@@ -43,6 +43,7 @@ const roleDescriptions: Record<string, string> = {
   cashier: "Puede consultar y registrar cobros dentro de su sucursal.",
   collections: "Puede dar seguimiento a la cartera y registrar cobros de su sucursal.",
   auditor: "Puede consultar información y auditoría de su sucursal, sin registrar operaciones.",
+  mdm_operator: "Puede consultar la cola MDM de su sucursal y confirmar registros, bloqueos y desbloqueos manuales.",
 };
 
 function InitialPasswordField({ label, name, minLength = 6 }: { label: string; name: string; minLength?: number }) {

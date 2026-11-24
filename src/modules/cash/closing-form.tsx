@@ -14,7 +14,11 @@ const dayFormat = new Intl.DateTimeFormat("es-DO", { dateStyle: "medium", timeZo
 
 export function CashClosingForm({ row, day }: { row: CashRow; day: string }) {
   const [state, action, pending] = useActionState(closeCashDay, {});
-  const [amounts, setAmounts] = useState<Record<CashMethod, string>>({ cash: "", transfer: "", other: cashExpected(row, "other") === 0n ? "0" : "" });
+  const [amounts, setAmounts] = useState<Record<CashMethod, string>>(() => ({
+    cash: "",
+    transfer: cashExpected(row, "transfer") === 0n ? "0.00" : "",
+    other: cashExpected(row, "other") === 0n ? "0" : "",
+  }));
   const [notes, setNotes] = useState("");
   const comparison = compareCashDeclaration(row, amounts);
   const type = CASH_TYPE_LABELS[row.type].toLowerCase();

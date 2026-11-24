@@ -12,7 +12,7 @@ export const navigation = [
   { label: "Recibos", href: "/recibos", icon: ReceiptText, permission: "payments.read" },
   { label: "Cuadre de cajas", href: "/cajas", icon: ClipboardList, permission: "cash.read" },
   { label: "Dispositivos", href: "/dispositivos", icon: Smartphone, permission: "devices.read" },
-  { label: "MDM · desactivado", href: "/mdm", icon: LockKeyhole, permission: "mdm.command" },
+  { label: "MDM", href: "/mdm", icon: LockKeyhole, permission: "mdm.manual" },
   { label: "Reportes", href: "/reportes", icon: BarChart3, permission: "reports.read" },
   { label: "Auditoría", href: "/auditoria", icon: ScrollText, permission: "audit.read" },
   { label: "Sucursales", href: "/sucursales", icon: Building2, permission: "branches.read" },

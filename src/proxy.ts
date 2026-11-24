@@ -19,6 +19,10 @@ export async function proxy(request: NextRequest) {
     },
   });
   const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith("/api/clientes-mobile/")) {
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
+  }
   const isLogin = pathname === "/login";
   const hasSupabaseSessionCookie = request.cookies.getAll().some(({ name }) =>
     /^sb-.+-auth-token(?:\.\d+)?$/i.test(name),

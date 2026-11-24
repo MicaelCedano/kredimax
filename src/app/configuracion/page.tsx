@@ -13,6 +13,7 @@ import { DEFAULT_FINANCING_SETTINGS } from "@/modules/financing/calculator";
 import { saveFinancingSettings } from "@/modules/financing/actions";
 import { resolveCreditPolicy } from "@/modules/credit-evaluation/engine";
 import { saveCreditPolicySettings } from "@/modules/credit-evaluation/actions";
+import { BackupQuickActions } from "./backup-quick-actions";
 
 const terms = DEFAULT_FINANCING_SETTINGS.allowedTerms;
 
@@ -31,7 +32,25 @@ export default async function FinancingSettingsPage({ searchParams }: { searchPa
   return <div className="min-h-screen bg-canvas"><Sidebar/><Topbar/><main id="main-content" tabIndex={-1} className="km-main px-4 pb-10 pt-7 sm:px-7 lg:ml-[244px] lg:px-7">
     <Link href="/" className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-accent"><ArrowLeft size={15}/>Volver al dashboard</Link>
     <div className="mb-6"><p className="text-xs font-semibold uppercase tracking-[.14em] text-accent">Administración · KrediMax</p><h1 className="mt-1 text-[26px] font-bold tracking-[-.6px] text-ink">Configuración financiera y políticas crediticias</h1><p className="mt-1 text-sm text-muted">Todos los cambios realizados por administradores quedan registrados en el historial de auditoría.</p></div>
-    <section className="km-panel mb-6 flex max-w-6xl flex-wrap items-center justify-between gap-4 p-5"><div><h2 className="text-base font-semibold text-ink">Apariencia</h2><p className="mt-1 text-sm text-muted">Elige cómo se ve KrediMax en este dispositivo.</p></div><AppearanceControl expanded/></section>
+    <div className="mb-6 grid max-w-6xl gap-4 md:grid-cols-2">
+      <section className="km-panel flex flex-wrap items-center justify-between gap-4 p-5">
+        <div>
+          <h2 className="text-base font-semibold text-ink">Apariencia</h2>
+          <p className="mt-1 text-sm text-muted">Elige cómo se ve KrediMax en este dispositivo.</p>
+        </div>
+        <AppearanceControl expanded/>
+      </section>
+
+      <section className="km-panel flex flex-col justify-between gap-3 p-5">
+        <div>
+          <h2 className="text-base font-semibold text-ink">Copias de seguridad y recuperación</h2>
+          <p className="mt-1 text-xs text-muted">
+            Backups automáticos diarios (3:00 AM AST), cifrado autenticado AES-256-GCM y Google Drive.
+          </p>
+        </div>
+        <BackupQuickActions />
+      </section>
+    </div>
     {estado === "guardada" && <p role="status" className="mb-4 rounded-lg border border-positive-line bg-positive-soft px-4 py-3 text-sm text-positive">Los valores predeterminados de financiamiento quedaron guardados y auditados.</p>}
     {estado === "politica-guardada" && <p role="status" className="mb-4 rounded-lg border border-positive-line bg-positive-soft px-4 py-3 text-sm text-positive">Las políticas de evaluación crediticia interna quedaron guardadas y auditadas.</p>}
     {estado && estado !== "guardada" && estado !== "politica-guardada" && <p role="alert" className="mb-4 rounded-lg border border-danger-line bg-danger-soft px-4 py-3 text-sm text-danger">No se pudieron guardar los valores; revisa las ponderaciones (deben sumar 100), los umbrales y los porcentajes.</p>}

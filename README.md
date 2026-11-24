@@ -38,13 +38,28 @@ La semilla solo permite las bases locales previstas y deja activa una sucursal: 
 
 Las migraciones versionadas están en `drizzle/`; `npm run db:migrate` carga la URL privada de `.env.local`, rechaza cualquier host que no sea localhost y las aplica en el orden del diario. Si detecta que el SQL fuente de una migración ya aplicada cambió, avisa y no lo vuelve a ejecutar. Antes de llevarlas a un entorno alojado, revisar duplicados normalizados, asignaciones de pagos y mapeos/alcances de sucursal.
 
-MDM permanece desactivado hasta elegir un proveedor: `/mdm` muestra únicamente el historial en modo de lectura y las escrituras de comandos están revocadas en la base. No se envían acciones a dispositivos.
+`/mdm` muestra la cola manual por sucursal. Un administrador puede asignar el rol **Programador MDM** desde Usuarios. Los financiamientos aprobados aparecen para enrolar. Cuando un equipo enrolado tiene saldo de una cuota con fecha anterior a hoy, aparece para bloquear. Un equipo con bloqueo confirmado pasa a desbloqueo al quedar al día en las cuotas vencidas. La pestaña Completadas registra el operador, la fecha y una referencia opcional. Las acciones se ejecutan en la herramienta externa de MDM. `/mdm/demo` permite probar el flujo con datos ficticios.
 
 ## Perfiles y vendedores
 
 Cada persona entra con su correo y contraseña. Desde **Mi perfil** (menú lateral o avatar) puede actualizar su nombre y cambiar la contraseña confirmando la actual; después del cambio debe iniciar sesión de nuevo.
 
 El administrador crea accesos en **Usuarios → Crear usuario** con nombre, correo, contraseña inicial de al menos 12 caracteres, rol y sucursal. El rol **Vendedor** registra clientes, equipos y solicitudes en su sucursal; la evaluación requiere un encargado o administrador. La creación queda auditada y no altera cuentas existentes. El servidor requiere `SUPABASE_SECRET_KEY` en `.env.local`, además de las migraciones 0059 y 0060; nunca expongas esa clave en variables `NEXT_PUBLIC_*`.
+
+## Adjuntos de solicitudes en Google Drive
+
+En **Solicitudes → Nueva solicitud → Registrar cliente nuevo → Negocio propio**, adjunta un PDF, JPG, PNG o WebP por requisito. Si el estado financiero tiene varias páginas, guárdalas en un solo PDF. Los tres archivos juntos pueden pesar hasta 4 MB. El detalle de la solicitud permite descargarlos según los permisos de KrediMax.
+
+1. En Google Cloud habilita la [API de Google Drive](https://console.cloud.google.com/apis/library/drive.googleapis.com), configura la pantalla de consentimiento y descarga el JSON de un [cliente OAuth de tipo Aplicación de escritorio](https://console.cloud.google.com/auth/clients). Guarda el JSON fuera del repositorio.
+2. Con el ID de la empresa de KrediMax (`tenants.id`), ejecuta desde el proyecto:
+
+   ```powershell
+   node scripts/configure-application-drive.mjs "C:\ruta\credenciales-oauth.json" "ID-DE-LA-EMPRESA"
+   ```
+
+3. Abre el enlace que muestra la terminal y autoriza la cuenta dueña de los documentos. El comando crea o reutiliza la carpeta privada **KrediMax - Documentos de solicitudes** en **Mi unidad**, con el alcance `drive.file`, y escribe la configuración en `.env.local`. Reinicia KrediMax. Para el entorno alojado, configura las cinco variables `GOOGLE_DRIVE_APPLICATION_*` del servidor para la empresa correspondiente y vuelve a desplegar.
+
+Los binarios se guardan en Drive y usan el espacio de la cuenta autorizada. Supabase guarda solo sus referencias. Mantén la carpeta privada. Para uso continuo, configura el consentimiento de Google para producción o uso interno. En modo de prueba externo el permiso caduca a los siete días. Si tienes que volver a autorizar, usa el mismo cliente OAuth y la misma cuenta para conservar el acceso a los documentos existentes.
 
 ## Registro local de errores del servidor
 
@@ -124,7 +139,7 @@ Para comprobar las alertas de vencimiento en la interfaz local, ejecuta `node sc
 - La base revoca DELETE/TRUNCATE de roles de API; cambios de membresía, sucursal, solicitud y contrato pasan por RPC con autorización/auditoría. Las escrituras de metadatos documentales permanecen deshabilitadas hasta definir consentimiento y almacenamiento privado.
 - La gestión de sucursales permite consultar y crear mediante RPC auditada al rol Administrador, aunque tenga sucursal de contexto. Una membresía sin sucursal solo se permite para Administrador; otros roles asignados quedan limitados a esa sucursal y no pueden crear sucursales ni escribir directamente en la tabla.
 - Administrador puede consultar y operar en toda la empresa aunque tenga una sucursal asignada; esa sucursal funciona como contexto predeterminado. Los demás roles quedan limitados a su sucursal en lectura y escritura. La migración local hizo backfill solo donde las relaciones históricas eran inequívocas.
-- Recuperación de contraseña depende de configurar Supabase Auth y un proveedor de correo. Storage privado y MDM real requieren servicios externos; MDM permanece desactivado por decisión del usuario. El cierre de caja está fuera del alcance. Reportes incluye conciliación interna de pagos, distribuciones y asientos bajo RLS; no concilia extractos bancarios.
+- Recuperación de contraseña depende de configurar Supabase Auth y un proveedor de correo. Storage privado y la ejecución de acciones MDM requieren servicios externos. El cierre de caja está fuera del alcance. Reportes incluye conciliación interna de pagos, distribuciones y asientos bajo RLS; no concilia extractos bancarios.
 - Los cobros parciales, pago final, reintentos idempotentes, sobrepago concurrente, reversos compensatorios y aislamiento por sucursal tienen pruebas SQL locales; la prueba concurrente limpia y verifica sus fixtures ficticias. Esta base local no equivale a una aprobación para producción: falta migrar y validar el entorno alojado, configurar dependencias externas y completar la matriz de carreras para otras RPC.
 
 Consulta [ARCHITECTURE.md](./ARCHITECTURE.md) para límites, decisiones y pendientes.

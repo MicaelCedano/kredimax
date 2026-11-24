@@ -1,0 +1,57 @@
+name: KrediMax Automated Daily Backup
+
+on:
+  schedule:
+    # 07:00 UTC = 03:00 AM AST (Dominican Republic time America/Santo_Domingo UTC-4)
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      backup_type:
+        description: 'Tipo de copia de seguridad'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - monthly
+          - manual
+
+jobs:
+  backup:
+    name: Execute Encrypted Backup to Google Drive
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lsb-release ca-certificates curl gnupg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Run KrediMax Backup Engine
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          KREDIMAX_BACKUP_KEY: ${{ secrets.KREDIMAX_BACKUP_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+          GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          GOOGLE_DRIVE_BACKUP_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_BACKUP_FOLDER_ID }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          node scripts/backup-runner.mjs --type=${{ github.event.inputs.backup_type || 'daily' }}

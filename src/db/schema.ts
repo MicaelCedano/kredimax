@@ -4,7 +4,7 @@ import {
   primaryKey, text, timestamp, uniqueIndex, uuid, varchar,
 } from "drizzle-orm/pg-core";
 
-export const memberRole = pgEnum("member_role", ["platform_admin", "tenant_admin", "branch_manager", "sales", "cashier", "collections", "auditor"]);
+export const memberRole = pgEnum("member_role", ["platform_admin", "tenant_admin", "branch_manager", "sales", "cashier", "collections", "auditor", "mdm_operator"]);
 export const financingStatus = pgEnum("financing_status", ["draft", "pending", "approved", "active", "paid_off", "rejected", "cancelled"]);
 export const installmentStatus = pgEnum("installment_status", ["pending", "partial", "paid", "overdue", "waived"]);
 
@@ -286,3 +286,59 @@ export const notifications = pgTable("notifications", {
   category: varchar("category", { length: 60 }).notNull(), title: varchar("title", { length: 200 }).notNull(), body: text("body").notNull(),
   readAt: timestamp("read_at", { withTimezone: true }), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("notifications_user_created_idx").on(t.userId, t.createdAt)]);
+
+export const systemBackups = pgTable("system_backups", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  backupType: varchar("backup_type", { length: 32 }).notNull().default("daily"),
+  targetType: varchar("target_type", { length: 32 }).notNull().default("full"),
+  status: varchar("status", { length: 24 }).notNull().default("in_progress"),
+  pgVersion: varchar("pg_version", { length: 120 }),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileSizeBytes: numeric("file_size_bytes", { precision: 20, scale: 0 }).notNull().default("0"),
+  sha256Checksum: varchar("sha256_checksum", { length: 64 }).notNull(),
+  encryptionAlgorithm: varchar("encryption_algorithm", { length: 32 }).notNull().default("aes-256-gcm"),
+  driveFileId: varchar("drive_file_id", { length: 128 }),
+  driveFolderPath: varchar("drive_folder_path", { length: 255 }),
+  manifest: jsonb("manifest").notNull().default({}),
+  errorMessage: text("error_message"),
+  integrityStatus: varchar("integrity_status", { length: 24 }).notNull().default("pending"),
+  integrityVerifiedAt: timestamp("integrity_verified_at", { withTimezone: true }),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdBy: uuid("created_by"),
+  createdByName: text("created_by_name"),
+}, (t) => [
+  index("system_backups_started_at_idx").on(t.startedAt),
+  index("system_backups_status_idx").on(t.status),
+  index("system_backups_tenant_idx").on(t.tenantId),
+]);
+
+export const customerPortalAccounts = pgTable("customer_portal_accounts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  branchId: uuid("branch_id"),
+  customerId: uuid("customer_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  identityKey: varchar("identity_key", { length: 32 }).notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("active"),
+  mustChangePassword: boolean("must_change_password").notNull().default(true),
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  failedAttempts: integer("failed_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  executiveName: text("executive_name"),
+  executiveWhatsapp: varchar("executive_whatsapp", { length: 32 }),
+  provisionedBy: uuid("provisioned_by").notNull(),
+  provisionedAt: timestamp("provisioned_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("customer_portal_accounts_user_uidx").on(t.userId),
+  uniqueIndex("customer_portal_accounts_tenant_customer_uidx").on(t.tenantId, t.customerId),
+  uniqueIndex("customer_portal_accounts_tenant_identity_uidx").on(t.tenantId, t.identityKey),
+  index("customer_portal_accounts_identity_idx").on(t.identityKey),
+  foreignKey({ name: "customer_portal_accounts_customer_tenant_fk", columns: [t.tenantId, t.customerId], foreignColumns: [customers.tenantId, customers.id] }),
+  foreignKey({ name: "customer_portal_accounts_branch_tenant_fk", columns: [t.tenantId, t.branchId], foreignColumns: [branches.tenantId, branches.id] }),
+]);
+
+

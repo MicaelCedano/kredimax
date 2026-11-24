@@ -22,6 +22,8 @@ import {
 import { formatDop } from "@/lib/format-money";
 import { imeiValidationMessage } from "@/lib/validation/imei";
 import { applicationFields } from "@/modules/financing/application-errors";
+import { applicationIncomeSources, businessDocumentRequirements } from "@/modules/financing/application-income";
+import { BusinessDocumentInputs } from "@/modules/financing/business-document-inputs";
 import { hasVariableInstallments, InstallmentSummary } from "@/modules/financing/installment-summary";
 import { DownPaymentSelector } from "@/modules/financing/down-payment-selector";
 import { FinancingPeriodSelector } from "@/modules/financing/period-selector";
@@ -65,6 +67,9 @@ const applicationErrorMessages: Record<string, string> = {
   "tenant-suspended": "La empresa está suspendida y no puede recibir solicitudes.",
   unavailable: "No se pudo consultar la información necesaria. Tus datos siguen en el formulario; vuelve a intentar.",
   "invalid-form": "Hay datos con formato inválido. Revisa los campos indicados abajo.",
+  "business-documents-invalid": "Revisa los archivos adjuntos requeridos para negocio propio.",
+  "application-drive-not-configured": "El administrador debe conectar Google Drive antes de enviar solicitudes de negocio propio.",
+  "application-drive-upload-failed": "No se pudieron guardar los archivos en Google Drive. Vuelve a intentarlo.",
   "invalid-customer": "Revisa el nombre y los datos del cliente.",
   "customer-not-found": "El cliente seleccionado ya no está disponible. Búscalo de nuevo.",
   "branch-required": "Selecciona una sucursal válida.",
@@ -85,12 +90,13 @@ const applicationErrorMessages: Record<string, string> = {
   "save-error": "No se pudo guardar la solicitud. Tus datos siguen en el formulario; puedes volver a intentar.",
 };
 
-export function CreditApplicationForm({ branches, defaultBranchId, settings, submissionKey, today }: {
+export function CreditApplicationForm({ branches, defaultBranchId, settings, submissionKey, today, applicationDriveReady }: {
   branches: BranchOption[];
   defaultBranchId: string;
   settings: FinancingSettings;
   submissionKey: string;
   today: string;
+  applicationDriveReady: boolean;
 }) {
   const [actionState, formAction] = useActionState(createCreditApplication, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -106,6 +112,8 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
   }, [step]);
   const [reviewCustomerName, setReviewCustomerName] = useState("");
   const [customerMode, setCustomerMode] = useState<"existing" | "new">("new");
+  const [incomeSource, setIncomeSource] = useState("");
+  const selectedIncomeSource = customerMode === "new" ? applicationIncomeSources.find(({ value }) => value === incomeSource) : undefined;
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerMatches, setCustomerMatches] = useState<CustomerOption[]>([]);
   const [customerSearchState, setCustomerSearchState] = useState<"idle" | "searching" | "ready" | "error">("idle");
@@ -252,7 +260,7 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
         }
       } else if (field instanceof HTMLInputElement && field.type === "checkbox") {
         field.checked = value === "on";
-      } else if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+      } else if ((field instanceof HTMLInputElement && field.type !== "file") || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
         field.value = value;
       }
     }
@@ -324,6 +332,7 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
 
   function startNewCustomer() {
     setCustomerMode("new");
+    setIncomeSource("");
     setCustomerId("");
     setSelectedCustomer(null);
     setCustomerIdentityNumber("");
@@ -361,7 +370,7 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
   }
 
   return <form ref={formRef} action={formAction} onSubmit={preserveSubmission} onKeyDown={(event) => {
-    if (event.key === "Enter" && step < 3 && event.target instanceof HTMLInputElement) { event.preventDefault(); nextStep(); }
+    if (event.key === "Enter" && step < 3 && event.target instanceof HTMLInputElement && event.target.type !== "file") { event.preventDefault(); nextStep(); }
   }} onInvalidCapture={(event) => {
     const field = event.target;
     if (!(field instanceof HTMLElement)) return;
@@ -409,9 +418,22 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
           </Fragment>}
           <Field label="Sucursal de origen *"><select required name="branchSelector" value={selectedCustomer?.branch_id ?? branchId} onChange={(event) => setBranchId(event.target.value)} disabled={customerMode === "existing" && Boolean(selectedCustomer?.branch_id)} className="km-input mt-1.5 w-full rounded-lg border border-field-border bg-surface px-3 py-2.5 text-sm font-normal disabled:bg-subtle"><option value="" disabled>Selecciona una sucursal</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></Field>
         </div>
-        <div className="mb-3 mt-7 border-t border-line pt-5"><h3 className="text-sm font-bold">Información adicional</h3><p className="mt-1 text-xs font-normal text-muted">Empleo y referencia personal, si están disponibles.</p></div><div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Empleo / empresa"><input name="employer" maxLength={160} value={employerInput} onChange={(e) => setEmployerInput(e.target.value)} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="Opcional"/></Field>
+        <div className="mb-3 mt-7 border-t border-line pt-5"><h3 className="text-sm font-bold">Ingresos y referencia personal</h3></div><div className="grid gap-4 sm:grid-cols-2">
+          {customerMode === "new" && (
+            <div className="sm:col-span-2">
+              <Field label="Fuente de ingresos *" error={serverFieldErrors.incomeSource}>
+                <select required name="incomeSource" value={incomeSource} onChange={(event) => setIncomeSource(event.target.value)} aria-invalid={Boolean(serverFieldErrors.incomeSource)} className="km-input mt-1.5 w-full rounded-lg border border-field-border bg-surface px-3 py-2.5 text-sm font-normal">
+                  <option value="" disabled>Selecciona la fuente de ingresos</option>
+                  {applicationIncomeSources.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </Field>
+            </div>
+          )}
+          <Field label={selectedIncomeSource?.value === "business_owner" ? "Nombre del negocio" : "Empleo / empresa"}><input name="employer" maxLength={160} value={employerInput} onChange={(e) => setEmployerInput(e.target.value)} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="Opcional"/></Field>
           <Field label="Ingreso mensual (RD$)"><MoneyInput name="monthlyIncome" inputMode="decimal" maxLength={18} placeholder="0.00" value={monthlyIncomeInput} onChange={(event) => setMonthlyIncomeInput(formatInputElement(event.currentTarget, formatMoneyInput))} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal"/></Field>
+          {selectedIncomeSource?.value === "business_owner" && (
+            <BusinessDocumentInputs driveReady={applicationDriveReady} fieldErrors={serverFieldErrors}/>
+          )}
           <Field label="Parentesco de referencia"><select name="referenceRelationship" value={referenceRelationship} onChange={(event) => setReferenceRelationship(event.target.value)} className="km-input mt-1.5 w-full rounded-lg border border-field-border bg-surface px-3 py-2.5 text-sm font-normal"><option value="">Selecciona un parentesco</option>{REFERENCE_RELATIONSHIPS.map((relationship) => <option key={relationship} value={relationship}>{relationship}</option>)}</select></Field>
           <Field label="Nombre de referencia"><input name="referenceName" maxLength={160} className="km-input mt-1.5 w-full rounded-lg border border-field-border px-3 py-2.5 text-sm font-normal" placeholder="Nombre y apellidos de la persona"/></Field>
           <Field label="Cédula de referencia" error={serverFieldErrors.referenceIdentityNumber}><input name="referenceIdentityNumber" inputMode="numeric" maxLength={13} pattern="[0-9]{3}-[0-9]{7}-[0-9]" aria-invalid={Boolean(serverFieldErrors.referenceIdentityNumber)} onChange={(event) => formatInputElement(event.currentTarget, formatIdentityInput)} className="km-input mt-1.5 w-full" placeholder="000-0000000-0 · opcional"/></Field>
@@ -506,6 +528,20 @@ export function CreditApplicationForm({ branches, defaultBranchId, settings, sub
       </section>
       {step === 3 && <section data-application-step="3" className="km-panel km-step-panel p-5 sm:p-6" aria-labelledby="application-review-title">
         <PanelHeading id="application-review-title" title="Revisa tu solicitud" description="Confirma el cliente, el equipo y las condiciones antes de enviarla a evaluación." icon={ClipboardList} inset="form"/>
+        {selectedIncomeSource && (
+          <dl className="mt-5 rounded-lg bg-subtle px-3 py-2 text-sm">
+            <div className="flex flex-wrap justify-between gap-2 py-1">
+              <dt className="text-muted">Fuente de ingresos</dt>
+              <dd className="font-semibold text-ink">{selectedIncomeSource.label}</dd>
+            </div>
+            {selectedIncomeSource.value === "business_owner" && (
+              <div className="flex flex-wrap justify-between gap-2 py-1">
+                <dt className="text-muted">Documentos para negocio propio</dt>
+                <dd className="font-semibold text-ink">{businessDocumentRequirements.length} archivos seleccionados</dd>
+              </div>
+            )}
+          </dl>
+        )}
         <dl className="mt-6 divide-y divide-line text-sm">{[["Cliente", uppercaseCustomerName(selectedCustomer?.full_name ?? reviewCustomerName)], ["Sucursal", branchName], ["Equipo", `${brand} ${model}`], ["IMEI", imei], ["Precio de venta", quote ? currency(quote.salePrice) : "—"], ["Inicial elegido", quote ? `${Number(quote.downPaymentPercent)}% · ${currency(quote.downPayment)}` : `${Number(downPaymentPercent)}%`], ["Límite recomendado al cliente", activeCreditSummary?.status === "complete" ? currency(activeCreditSummary.recommendedMaxSalePrice) : "Evaluación incompleta"], ["Plazo y frecuencia", `${termMonths} meses · ${frequency === "fortnightly" ? "Quincenal" : "Mensual"}`], ["Primera cuota", firstInstallmentDate], ["Última cuota", quote?.finalDueDate ?? "—"]].map(([label, value]) => <div key={label} className="flex flex-wrap justify-between gap-2 py-3"><dt className="text-muted">{label}</dt><dd className="break-words text-right font-semibold text-ink">{value}</dd></div>)}</dl>
         {capacityComparison && (capacityComparison.exceedsSalePriceLimit || capacityComparison.exceedsMonthlyCapacity) && (
           <div role="status" className="mt-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-xs leading-5 text-warning">
