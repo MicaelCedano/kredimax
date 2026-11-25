@@ -5,7 +5,7 @@ import { SubmitButton } from "@/components/forms/submit-button";
 import { Eye, EyeOff, KeyRound, Save, ShieldCheck, UserPlus } from "lucide-react";
 import { usePreservedFormValues } from "@/components/forms/preserved-action-form";
 import { changeOwnPassword, createTenantUser, updateOwnProfile } from "@/modules/account/actions";
-import { operationalRoles } from "@/modules/account/roles";
+import { tenantRoles } from "@/modules/account/roles";
 
 const messages: Record<string,string> = {
   "invalid-name":"Escribe un nombre entre 2 y 200 caracteres.","save-error":"No se pudo guardar el nombre. Intenta de nuevo.",
@@ -38,6 +38,7 @@ export function ChangePasswordForm() {
 }
 
 const roleDescriptions: Record<string, string> = {
+  tenant_admin: "Puede gestionar la empresa, sus usuarios y todas sus sucursales.",
   sales: "Puede registrar clientes, equipos y solicitudes en su sucursal. La aprobación requiere un encargado o administrador.",
   branch_manager: "Puede gestionar la operación y evaluar solicitudes dentro de su sucursal.",
   cashier: "Puede consultar y registrar cobros dentro de su sucursal.",
@@ -55,7 +56,9 @@ function InitialPasswordField({ label, name, minLength = 6 }: { label: string; n
 export function CreateUserForm({branches,defaultBranchId,onCancel}:{branches:{id:string;name:string}[];defaultBranchId:string;onCancel:()=>void}) {
   const [state,action,pending]=useActionState(createTenantUser,null);
   const [role, setRole] = useState("sales");
-  const {formRef,preserve}=usePreservedFormValues(state,["fullName","email","role","branchId"]);
+  const [branchId, setBranchId] = useState(defaultBranchId);
+  const isAdmin = role === "tenant_admin";
+  const {formRef,preserve}=usePreservedFormValues(state,["fullName","email"]);
   return <form ref={formRef} action={action} onSubmit={preserve} data-pending={pending} className="flex min-h-0 flex-1 flex-col">
     <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-6 sm:px-7">
       <fieldset className="space-y-4"><legend className="mb-4 text-sm font-bold text-ink">Datos de acceso</legend>
@@ -66,13 +69,14 @@ export function CreateUserForm({branches,defaultBranchId,onCancel}:{branches:{id
         </div>
       </fieldset>
       <fieldset className="border-t border-line pt-5"><legend className="float-left mb-4 w-full text-sm font-bold text-ink">Rol y sucursal</legend><div className="clear-both grid gap-4 sm:grid-cols-2">
-        <Field label="Rol"><select name="role" required value={role} onChange={event=>setRole(event.target.value)} className="km-input mt-2 w-full">{Object.entries(operationalRoles).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></Field>
-        <Field label="Sucursal"><select name="branchId" required defaultValue={defaultBranchId} className="km-input mt-2 w-full"><option value="" disabled>Selecciona una sucursal</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></Field>
+        <Field label="Rol"><select name="role" required value={role} onChange={event=>setRole(event.target.value)} className="km-input mt-2 w-full">{Object.entries(tenantRoles).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></Field>
+        {isAdmin ? <div className="text-sm font-semibold text-secondary">Sucursal<p className="mt-2 py-2 font-normal">Todas las sucursales</p></div> :
+          <Field label="Sucursal"><select name="branchId" required value={branchId} onChange={event=>setBranchId(event.target.value)} className="km-input mt-2 w-full"><option value="" disabled>Selecciona una sucursal</option>{branches.map(branch=><option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></Field>}
       </div></fieldset>
       <div className="space-y-4 border-t border-line pt-5"><InitialPasswordField label="Contraseña inicial" name="password" minLength={6}/><InitialPasswordField label="Confirmar contraseña" name="confirmation" minLength={6}/><p className="text-xs text-muted">Mínimo 6 caracteres. Podrá cambiarla desde Mi perfil.</p></div>
       <p className="flex items-start gap-2.5 rounded-xl bg-accent-soft p-3.5 text-xs leading-5 text-accent"><ShieldCheck size={18} className="mt-0.5 shrink-0" aria-hidden/>{roleDescriptions[role]}</p>
       <ErrorMessage state={state}/>
     </div>
-    <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-line bg-surface px-5 py-4 sm:px-7"><button type="button" onClick={onCancel} disabled={pending} className="km-secondary disabled:opacity-50">Cancelar</button><SubmitButton type="submit" disabled={pending || !branches.length} className="km-primary"><UserPlus size={17} aria-hidden/>{pending ? "Creando…" : "Crear usuario"}</SubmitButton></footer>
+    <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-line bg-surface px-5 py-4 sm:px-7"><button type="button" onClick={onCancel} disabled={pending} className="km-secondary disabled:opacity-50">Cancelar</button><SubmitButton type="submit" disabled={pending || (!isAdmin && !branches.length)} className="km-primary"><UserPlus size={17} aria-hidden/>{pending ? "Creando…" : "Crear usuario"}</SubmitButton></footer>
   </form>;
 }

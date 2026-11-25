@@ -53,8 +53,8 @@ const userSchema=z.object({
     const val = s.toLowerCase();
     return val.includes("@") ? val : `${val.replace(/[^a-z0-9._-]/g, "")}@kredimax.com`;
   }),
-  password:z.string().min(6).max(256),confirmation:z.string(),branchId:z.string().uuid(),
-  role:z.enum(["sales","branch_manager","cashier","collections","auditor","mdm_operator"]),
+  password:z.string().min(6).max(256),confirmation:z.string(),branchId:z.union([z.string().uuid(), z.literal("")]),
+  role:z.enum(["tenant_admin","sales","branch_manager","cashier","collections","auditor","mdm_operator"]),
 }).refine(s=>s.password===s.confirmation);
 
 export async function createTenantUser(_previous: AccountActionState, form: FormData): Promise<AccountActionState> {
@@ -62,9 +62,13 @@ export async function createTenantUser(_previous: AccountActionState, form: Form
   if (!access.ok || access.membership.role!=="tenant_admin") return {state:"forbidden"};
   const parsed=userSchema.safeParse(Object.fromEntries(["fullName","email","password","confirmation","branchId","role"].map(name=>[name,value(form,name)])));
   if (!parsed.success) return {state:"invalid-user"};
-  const branch=await access.supabase.from("branches").select("id").eq("id",parsed.data.branchId).eq("tenant_id",access.membership.tenant_id).eq("active",true).maybeSingle();
-  if (branch.error) return {state:"unavailable"};
-  if (!branch.data) return {state:"invalid-branch"};
+  const branchId = parsed.data.role === "tenant_admin" ? null : parsed.data.branchId;
+  if (branchId !== null) {
+    if (!branchId) return {state:"invalid-branch"};
+    const branch=await access.supabase.from("branches").select("id").eq("id",branchId).eq("tenant_id",access.membership.tenant_id).eq("active",true).maybeSingle();
+    if (branch.error) return {state:"unavailable"};
+    if (!branch.data) return {state:"invalid-branch"};
+  }
   if (!isUserProvisioningConfigured()) return {state:"not-configured"};
   const admin=createSupabaseAdminClient();
   const rawEmailInput = value(form, "email").trim();
@@ -76,11 +80,11 @@ export async function createTenantUser(_previous: AccountActionState, form: Form
     user_metadata:metadata,app_metadata:{kredimax_created_for_tenant:access.membership.tenant_id,kredimax_created_by:access.userId}});
   if (created.error || !created.data.user) return {state:created.error?.code==="email_exists" || created.error?.code==="user_already_exists" ? "email-exists" : "user-save-error"};
   const userId=created.data.user.id;
-  const provisioned=await admin.rpc("provision_tenant_user",{p_tenant_id:access.membership.tenant_id,p_actor_id:access.userId,p_user_id:userId,p_role:parsed.data.role,p_branch_id:parsed.data.branchId});
+  const provisioned=await admin.rpc("provision_tenant_user",{p_tenant_id:access.membership.tenant_id,p_actor_id:access.userId,p_user_id:userId,p_role:parsed.data.role,p_branch_id:branchId});
   if (provisioned.error) {
     // A lost response may follow a commit. Never delete an account with a membership.
     const existing=await admin.from("tenant_memberships").select("id,tenant_id,branch_id,role").eq("user_id",userId).maybeSingle();
-    if (existing.data?.tenant_id===access.membership.tenant_id && existing.data.branch_id===parsed.data.branchId && existing.data.role===parsed.data.role) {
+    if (existing.data?.tenant_id===access.membership.tenant_id && existing.data.branch_id===branchId && existing.data.role===parsed.data.role) {
       revalidatePath("/usuarios"); redirect("/usuarios?estado=creado");
     }
     if (existing.error || existing.data || !provisioned.error.code) return {state:"provisioning-uncertain"};
