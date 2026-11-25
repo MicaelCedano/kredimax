@@ -610,6 +610,13 @@
       "when": 1795536000000,
       "tag": "0086_cash_drawer_handoff",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1795560000000,
+      "tag": "0087_tenant_admin_provisioning",
+      "breakpoints": true
     }
   ]
 }
